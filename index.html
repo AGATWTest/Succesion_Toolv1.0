@@ -1,0 +1,2404 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Army Succession Planning Tool</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/pptxgenjs@3.12.0/dist/pptxgen.bundle.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=IBM+Plex+Sans:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+:root {
+  --navy:        #08111f;
+  --navy-mid:    #0e1e35;
+  --navy-card:   #112240;
+  --navy-light:  #1a3360;
+  --navy-border: #1e3a6a;
+  --scarlet:     #c8102e;
+  --scarlet-dk:  #9a0c23;
+  --scarlet-lt:  #e8294a;
+  --gold:        #c9a84c;
+  --gold-lt:     #e8c96a;
+  --white:       #eef2f7;
+  --muted:       #6b809a;
+  --muted-lt:    #8899aa;
+  --success:     #27ae60;
+  --warning:     #e67e22;
+  --danger:      #e74c3c;
+  --info:        #2980b9;
+  --gap-col:     #ff4444;
+  --cov-col:     #27ae60;
+  --inc-col:     #2471a3;
+  --slat-col:    #7d3c98;
+  --kd12-col:    #f1c40f;
+  --kd24-col:    #e67e22;
+  --row-h:       36px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'IBM Plex Sans',sans-serif;background:var(--navy);color:var(--white);min-height:100vh;font-size:13px;overflow-x:hidden}
+
+/* ── HEADER ── */
+.hdr{background:linear-gradient(120deg,#060e1a 0%,#0e1e35 50%,#130810 100%);border-bottom:3px solid var(--scarlet);position:sticky;top:0;z-index:200;box-shadow:0 4px 30px rgba(0,0,0,.6)}
+.hdr-inner{display:flex;align-items:center;gap:14px;padding:8px 20px}
+
+.hdr-titles{flex:1}
+.hdr-title{font-family:'Oswald',sans-serif;font-size:20px;font-weight:700;letter-spacing:3px;text-transform:uppercase;line-height:1.1}
+.hdr-sub{font-size:10px;letter-spacing:3px;text-transform:uppercase;color:var(--gold);margin-top:2px}
+.hdr-tabs{display:flex;gap:3px}
+.tab{font-family:'Oswald',sans-serif;font-size:12px;letter-spacing:1.5px;text-transform:uppercase;padding:7px 18px;border:1px solid transparent;background:transparent;color:var(--muted);cursor:pointer;border-radius:3px;transition:all .2s}
+.tab:hover{color:var(--white);border-color:var(--navy-border)}
+.tab.active{background:var(--scarlet);color:#fff;border-color:var(--scarlet-dk)}
+
+/* ── UPLOAD SCREEN ── */
+#uploadScreen{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:calc(100vh - 80px);padding:40px 20px}
+.up-card{background:var(--navy-card);border:1px solid var(--navy-border);border-top:3px solid var(--scarlet);border-radius:8px;padding:44px 52px;max-width:580px;width:100%;text-align:center;box-shadow:0 12px 50px rgba(0,0,0,.5)}
+.up-card h2{font-family:'Oswald',sans-serif;font-size:22px;letter-spacing:2px;text-transform:uppercase;color:var(--gold);margin-bottom:8px}
+.up-card p{color:var(--muted-lt);margin-bottom:28px;font-size:13px;line-height:1.6}
+.drop-zone{border:2px dashed var(--navy-border);border-radius:6px;padding:36px 20px;cursor:pointer;transition:all .2s;margin-bottom:18px}
+.drop-zone:hover,.drop-zone.over{border-color:var(--scarlet);background:rgba(200,16,46,.06)}
+.drop-icon{font-size:36px;margin-bottom:10px}
+.drop-zone p{color:var(--muted-lt);margin:0;font-size:13px}
+.drop-zone strong{color:var(--white)}
+.up-actions{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
+
+/* ── BUTTONS ── */
+.btn{font-family:'Oswald',sans-serif;letter-spacing:1.5px;text-transform:uppercase;padding:8px 20px;border:none;border-radius:3px;cursor:pointer;font-size:12px;transition:all .2s;white-space:nowrap}
+.btn-primary{background:var(--scarlet);color:#fff}.btn-primary:hover{background:var(--scarlet-lt)}
+.btn-secondary{background:var(--navy-light);color:var(--white);border:1px solid var(--navy-border)}.btn-secondary:hover{background:#224480}
+.btn-gold{background:var(--gold);color:var(--navy)}.btn-gold:hover{background:var(--gold-lt)}
+.btn-success{background:var(--success);color:#fff}.btn-success:hover{background:#219a52}
+.btn-danger{background:var(--danger);color:#fff}.btn-danger:hover{background:#c0392b}
+.btn-sm{padding:5px 12px;font-size:10px}
+.btn-xs{padding:3px 8px;font-size:10px}
+
+/* ── MAIN APP ── */
+#mainApp{display:none}
+.app-wrap{display:flex;height:calc(100vh - 80px);overflow:hidden}
+
+/* ── SIDEBAR ── */
+.sidebar{width:210px;flex-shrink:0;background:var(--navy-mid);border-right:1px solid var(--navy-border);overflow-y:auto;padding:14px 10px;display:flex;flex-direction:column;gap:16px}
+.sb-section{}
+.sb-label{font-family:'Oswald',sans-serif;font-size:9px;letter-spacing:2.5px;text-transform:uppercase;color:var(--gold);margin-bottom:7px;padding-bottom:4px;border-bottom:1px solid var(--navy-border)}
+.chip-group{display:flex;flex-wrap:wrap;gap:3px}
+.chip{font-size:10px;padding:3px 7px;border-radius:10px;border:1px solid var(--navy-border);background:transparent;color:var(--muted-lt);cursor:pointer;transition:all .15s;font-family:'IBM Plex Sans',sans-serif}
+.chip:hover{border-color:var(--scarlet);color:var(--white)}
+.chip.on{background:var(--scarlet);border-color:var(--scarlet-dk);color:#fff}
+.bat-btn{display:block;width:100%;text-align:left;font-size:11px;padding:5px 8px;border-radius:3px;border:1px solid transparent;background:transparent;color:var(--muted-lt);cursor:pointer;margin-bottom:2px;font-family:'IBM Plex Sans',sans-serif;transition:all .15s;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bat-btn:hover{background:var(--navy-light);color:var(--white)}
+.bat-btn.on{background:var(--navy-light);color:var(--white);border-color:var(--scarlet)}
+.sb-actions{display:flex;flex-direction:column;gap:5px}
+
+/* ── CONTENT AREA ── */
+.content{flex:1;overflow:hidden;display:flex;flex-direction:column}
+.toolbar{padding:7px 14px;background:var(--navy-mid);border-bottom:1px solid var(--navy-border);display:flex;gap:8px;align-items:center;flex-wrap:wrap;flex-shrink:0}
+.toolbar-label{font-family:'Oswald',sans-serif;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted-lt)}
+.count-badge{font-family:'IBM Plex Mono',sans-serif;font-size:11px;color:var(--white);background:var(--navy-light);padding:2px 8px;border-radius:10px;border:1px solid var(--navy-border)}
+.toolbar-right{margin-left:auto;display:flex;gap:6px;align-items:center}
+
+/* ── VIEW CONTAINERS ── */
+#dashView{padding:16px;overflow-y:auto;height:100%}
+#tableView{overflow:auto;height:100%}
+#ganttView{overflow:auto;height:100%}
+
+/* ── STAT CARDS ── */
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:20px}
+.stat-card{background:var(--navy-card);border:1px solid var(--navy-border);border-left:3px solid var(--scarlet);border-radius:5px;padding:14px 16px}
+.stat-card.clickable{cursor:pointer;transition:background .15s,transform .1s}
+.stat-card.clickable:hover{background:rgba(255,255,255,.05);transform:translateY(-1px)}
+.stat-card.clickable.active{border-color:var(--gold);background:rgba(201,168,76,.08)}
+.drill-panel{background:var(--navy-card);border:1px solid var(--navy-border);border-radius:5px;margin-top:14px;overflow:hidden}
+.drill-panel-header{display:flex;justify-content:space-between;align-items:center;padding:10px 14px;background:rgba(255,255,255,.03);border-bottom:1px solid var(--navy-border)}
+.drill-panel-title{font-family:'Oswald',sans-serif;font-size:13px;letter-spacing:1px;text-transform:uppercase;color:var(--gold)}
+.drill-panel-close{background:none;border:none;color:var(--muted-lt);cursor:pointer;font-size:16px;line-height:1;padding:0 4px}
+.drill-panel-close:hover{color:var(--white)}
+.stat-card.g{border-left-color:var(--success)}.stat-card.y{border-left-color:var(--warning)}.stat-card.r{border-left-color:var(--danger)}.stat-card.b{border-left-color:var(--info)}
+.sv{font-family:'Oswald',sans-serif;font-size:30px;font-weight:700;line-height:1}
+.sl{font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--muted-lt);margin-top:3px}
+.sec-title{font-family:'Oswald',sans-serif;font-size:12px;letter-spacing:2px;text-transform:uppercase;color:var(--gold);margin-bottom:10px;padding-bottom:5px;border-bottom:1px solid var(--navy-border)}
+
+/* ── MAIN DATA TABLE ── */
+.tbl-wrap{overflow:auto;height:100%}
+table.main-tbl{border-collapse:collapse;white-space:nowrap;font-size:12px;width:100%}
+table.main-tbl th{font-family:'Oswald',sans-serif;font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);background:var(--navy-mid);padding:7px 10px;text-align:left;border-bottom:2px solid var(--scarlet);border-right:1px solid var(--navy-border);position:sticky;top:0;z-index:10;cursor:pointer;user-select:none;white-space:nowrap}
+table.main-tbl th:hover{color:var(--white)}
+table.main-tbl th.hidden-col{display:none}
+table.main-tbl td{padding:6px 10px;border-bottom:1px solid rgba(255,255,255,.04);border-right:1px solid rgba(255,255,255,.03);vertical-align:middle}
+table.main-tbl td.hidden-col{display:none}
+table.main-tbl tr:hover td{background:rgba(255,255,255,.03)}
+table.main-tbl tr.alert-row td{background:rgba(200,16,46,.05)}
+table.main-tbl tr.gap-row td{background:rgba(255,68,68,.04)}
+.th-inner{display:flex;align-items:center;gap:4px}
+.th-eye{font-size:10px;opacity:.5;cursor:pointer;padding:1px 3px;border-radius:2px;border:none;background:transparent;color:var(--muted-lt)}
+.th-eye:hover{opacity:1;background:var(--navy-border)}
+
+/* badges */
+.badge{display:inline-block;padding:2px 7px;border-radius:9px;font-size:9px;font-weight:600;letter-spacing:.5px;text-transform:uppercase;font-family:'IBM Plex Sans',sans-serif}
+.b-gap{background:rgba(200,16,46,.2);color:#ff7777;border:1px solid rgba(200,16,46,.4)}
+.b-cov{background:rgba(39,174,96,.15);color:#27ae60;border:1px solid rgba(39,174,96,.3)}
+.b-unf{background:rgba(230,126,18,.15);color:#e67e22;border:1px solid rgba(230,126,18,.3)}
+.b-sum{background:rgba(200,16,46,.2);color:#ffaaaa;border:1px solid rgba(200,16,46,.3)}
+.b-win{background:rgba(41,128,185,.2);color:#85c1e9;border:1px solid rgba(41,128,185,.3)}
+.b-kd{background:rgba(241,196,15,.2);color:#f1c40f;border:1px solid rgba(241,196,15,.4)}
+.b-alert{background:rgba(231,76,60,.25);color:#ff6b6b;border:1px solid #e74c3c}
+
+/* ── COLUMN TOGGLE PANEL ── */
+.col-toggle-panel{position:fixed;top:80px;right:0;width:220px;background:var(--navy-card);border-left:2px solid var(--scarlet);border-bottom:1px solid var(--navy-border);padding:14px;z-index:150;max-height:calc(100vh - 80px);overflow-y:auto;transform:translateX(100%);transition:transform .25s ease;box-shadow:-6px 0 24px rgba(0,0,0,.5)}
+.col-toggle-panel.open{transform:translateX(0)}
+.col-toggle-title{font-family:'Oswald',sans-serif;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--gold);margin-bottom:10px}
+.col-toggle-item{display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid rgba(255,255,255,.04);cursor:pointer}
+.col-toggle-item:hover{color:var(--white)}
+.col-toggle-cb{accent-color:var(--scarlet);width:13px;height:13px;cursor:pointer;flex-shrink:0}
+.col-toggle-name{font-size:11px;color:var(--muted-lt)}
+
+/* ── ADD ROW MODAL ── */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:300;display:none;align-items:flex-start;justify-content:center;padding:20px;overflow-y:auto}
+.modal-overlay.open{display:flex}
+.modal{background:var(--navy-card);border:1px solid var(--navy-border);border-top:3px solid var(--scarlet);border-radius:8px;width:100%;max-width:860px;padding:24px;margin:auto;box-shadow:0 16px 60px rgba(0,0,0,.6)}
+.modal-title{font-family:'Oswald',sans-serif;font-size:18px;letter-spacing:2px;text-transform:uppercase;margin-bottom:4px}
+.modal-sub{font-size:11px;color:var(--muted-lt);margin-bottom:20px}
+.form-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;margin-bottom:20px}
+.form-group label{font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--gold);display:block;margin-bottom:4px;font-family:'Oswald',sans-serif}
+.form-group input,.form-group select{width:100%;background:var(--navy);border:1px solid var(--navy-border);color:var(--white);padding:7px 10px;border-radius:3px;font-size:12px;font-family:'IBM Plex Sans',sans-serif;transition:border-color .2s}
+.form-group input:focus,.form-group select:focus{outline:none;border-color:var(--scarlet)}
+.form-group input::placeholder{color:var(--muted)}
+.form-divider{grid-column:1/-1;border-top:1px solid var(--navy-border);padding-top:12px;font-family:'Oswald',sans-serif;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--gold)}
+.modal-actions{display:flex;gap:8px;justify-content:flex-end}
+
+/* ── DETAIL PANEL ── */
+.detail-panel{position:fixed;right:-400px;top:80px;width:380px;height:calc(100vh - 80px);background:var(--navy-card);border-left:2px solid var(--scarlet);overflow-y:auto;padding:18px;transition:right .3s ease;z-index:100;box-shadow:-8px 0 32px rgba(0,0,0,.5)}
+.detail-panel.open{right:0}
+.dp-close{position:absolute;top:10px;right:10px;background:var(--scarlet);border:none;color:#fff;width:24px;height:24px;border-radius:50%;cursor:pointer;font-size:13px;display:flex;align-items:center;justify-content:center}
+.dp-title{font-family:'Oswald',sans-serif;font-size:17px;margin-bottom:3px;padding-right:28px}
+.dp-sub{font-size:10px;color:var(--gold);letter-spacing:2px;text-transform:uppercase;margin-bottom:14px}
+.dp-section{margin-bottom:14px}
+.dp-sec-label{font-family:'Oswald',sans-serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--gold);border-bottom:1px solid var(--navy-border);padding-bottom:3px;margin-bottom:7px}
+.dp-row{display:flex;justify-content:space-between;padding:3px 0;font-size:11px;border-bottom:1px solid rgba(255,255,255,.03)}
+.dp-k{color:var(--muted-lt)}.dp-v{color:var(--white);font-weight:600;text-align:right;max-width:55%}
+.dp-v.alert{color:var(--scarlet-lt)}
+.dp-input-g{margin-top:6px}
+.dp-input-g label{font-size:10px;color:var(--muted-lt);display:block;margin-bottom:3px}
+.dp-input{width:100%;background:var(--navy);border:1px solid var(--navy-border);color:var(--white);padding:5px 8px;border-radius:3px;font-size:11px;font-family:'IBM Plex Sans',sans-serif}
+.dp-input:focus{outline:none;border-color:var(--scarlet)}
+.dp-select{width:100%;background:var(--navy);border:1px solid var(--navy-border);color:var(--white);padding:5px 8px;border-radius:3px;font-size:11px}
+.alert-box{background:rgba(200,16,46,.1);border:1px solid rgba(200,16,46,.4);border-radius:4px;padding:9px 11px;font-size:11px;color:#ffaaaa;margin-top:8px;line-height:1.5}
+
+/* ── IMPORT MODAL ── */
+.imp-preview{max-height:300px;overflow-y:auto;margin-bottom:14px}
+.imp-tbl{width:100%;border-collapse:collapse;font-size:11px}
+.imp-tbl th{font-family:'Oswald',sans-serif;font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--gold);padding:5px 7px;border-bottom:1px solid var(--navy-border);text-align:left;background:var(--navy-mid)}
+.imp-tbl td{padding:5px 7px;border-bottom:1px solid rgba(255,255,255,.04);vertical-align:middle}
+
+/* ── GANTT ── */
+.gantt-wrap{padding:14px;min-width:800px}
+.gantt-legend{display:flex;flex-wrap:wrap;gap:12px;margin-bottom:12px;padding:8px 12px;background:var(--navy-card);border:1px solid var(--navy-border);border-radius:5px;font-size:10px;align-items:center}
+.g-li{display:flex;align-items:center;gap:4px}
+.g-sw{width:18px;height:8px;border-radius:2px}
+.g-dm{width:9px;height:9px;transform:rotate(45deg);border-radius:1px;flex-shrink:0}
+.gantt-bar{position:absolute;top:8px;height:20px;border-radius:3px;font-size:9px;display:flex;align-items:center;padding:0 4px;overflow:hidden;white-space:nowrap;font-weight:600}
+.gb-inc{background:linear-gradient(90deg,#1a5276,#2471a3);border:1px solid #2471a3;color:#fff}
+.gb-slat{background:linear-gradient(90deg,#512e8c,#7d3c98);border:1px solid #7d3c98;color:#fff}
+.gb-gap{background:repeating-linear-gradient(45deg,rgba(200,16,46,.35),rgba(200,16,46,.35) 4px,rgba(200,16,46,.1) 4px,rgba(200,16,46,.1) 8px);border:1px solid var(--scarlet);color:#ff9999}
+.gb-unf{background:repeating-linear-gradient(45deg,rgba(230,126,18,.25),rgba(230,126,18,.25) 4px,rgba(230,126,18,.08) 4px,rgba(230,126,18,.08) 8px);border:1px dashed var(--warning);color:var(--warning)}
+.kd-mk{position:absolute;top:5px;width:11px;height:11px;transform:translateX(-5px) rotate(45deg);border-radius:1px;z-index:5;cursor:pointer}
+.kd-mk.k12{background:var(--kd12-col);box-shadow:0 0 5px rgba(241,196,15,.6)}
+.kd-mk.k24{background:var(--kd24-col);box-shadow:0 0 5px rgba(230,126,18,.6)}
+.kd-lbl{position:absolute;bottom:4px;font-size:7px;transform:translateX(-50%);font-weight:700;white-space:nowrap}
+.kd-lbl.k12{color:var(--kd12-col)}.kd-lbl.k24{color:var(--kd24-col)}
+.atap-vl{position:absolute;top:0;bottom:0;width:2px;z-index:4}
+.atap-vl.sum{background:rgba(200,16,46,.7)}.atap-vl.win{background:rgba(41,128,185,.7)}
+.atap-lbl{position:absolute;top:1px;font-size:7px;font-family:'Oswald',sans-serif;white-space:nowrap}
+.atap-lbl.sum{color:var(--scarlet-lt)}.atap-lbl.win{color:#85c1e9}
+.sb-band{position:absolute;top:0;bottom:0;pointer-events:none;z-index:0}
+.sb-band.sum{background:rgba(200,16,46,.08)}.sb-band.win{background:rgba(41,128,185,.08)}
+.mm-dot{position:absolute;top:2px;right:2px;width:7px;height:7px;border-radius:50%;background:var(--scarlet);box-shadow:0 0 5px var(--scarlet);z-index:6}
+.g-row{display:flex;border-bottom:1px solid rgba(255,255,255,.04);min-height:38px;align-items:center;cursor:pointer;transition:background .15s}
+.g-row:hover{background:rgba(255,255,255,.025)}
+.g-row.alert-row{background:rgba(200,16,46,.04)}
+.g-hdr{display:flex;border-bottom:2px solid var(--scarlet);position:sticky;top:0;z-index:10;background:var(--navy)}
+.g-yr-hdr{display:flex;border-bottom:1px solid var(--navy-border);background:var(--navy);position:sticky;top:22px;z-index:9}
+.mo-cell{font-family:'Oswald',sans-serif;font-size:8px;letter-spacing:.5px;color:var(--muted-lt);text-align:center;padding:3px 1px;border-left:1px solid rgba(255,255,255,.04)}
+.mo-cell.jan{border-left:1px solid var(--navy-border);color:var(--gold)}
+.yr-cell{font-family:'Oswald',sans-serif;font-size:10px;letter-spacing:2px;color:var(--gold);text-align:center;padding:3px 2px;border-left:1px solid var(--navy-border);background:var(--navy-mid)}
+
+/* ── TOAST ── */
+.toasts{position:fixed;bottom:16px;right:16px;z-index:500;display:flex;flex-direction:column;gap:6px}
+.toast{background:var(--navy-card);border:1px solid var(--navy-border);border-left:4px solid var(--success);border-radius:4px;padding:9px 14px;font-size:11px;color:var(--white);max-width:260px;animation:sIn .3s ease;box-shadow:0 4px 16px rgba(0,0,0,.4)}
+.toast.err{border-left-color:var(--danger)}.toast.wrn{border-left-color:var(--warning)}
+@keyframes sIn{from{transform:translateX(100%);opacity:0}to{transform:translateX(0);opacity:1}}
+
+/* scrollbar */
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:var(--navy)}
+::-webkit-scrollbar-thumb{background:var(--navy-light);border-radius:3px}
+
+/* dashboard table */
+.d-tbl-wrap{overflow-x:auto;margin-bottom:20px}
+.d-tbl{width:100%;border-collapse:collapse;font-size:11px}
+.d-tbl th{font-family:'Oswald',sans-serif;font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--gold);background:var(--navy-mid);padding:6px 9px;text-align:left;border-bottom:1px solid var(--navy-border);white-space:nowrap;position:sticky;top:0}
+.d-tbl td{padding:6px 9px;border-bottom:1px solid rgba(255,255,255,.04);vertical-align:middle;white-space:nowrap}
+.d-tbl tr:hover td{background:rgba(255,255,255,.03)}
+.d-tbl tr.alert-row td{background:rgba(200,16,46,.06)}
+#guideModal{position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:500;display:none;align-items:flex-start;justify-content:center;overflow-y:auto;padding:20px}
+#guideModal.open{display:flex}
+#guideModalInner{background:#08111f;border:1px solid #1e3a6a;border-radius:6px;width:100%;max-width:1100px;max-height:90vh;overflow-y:auto;position:relative}
+#guideModalInner .page{padding:32px}
+#guideModalInner .back-top{position:sticky;bottom:16px;right:16px;float:right}
+.guide-close-btn{position:sticky;top:12px;float:right;margin:12px 12px 0 0;background:var(--navy-card);border:1px solid var(--navy-bdr);color:var(--muted-lt);font-family:'IBM Plex Mono',monospace;font-size:11px;padding:6px 14px;border-radius:3px;cursor:pointer;z-index:10}
+.guide-close-btn:hover{color:var(--gold);border-color:var(--gold)}
+.g-row.grade-mismatch-row{background:rgba(230,126,18,.06)}
+.g-row.grade-mismatch-row:hover{background:rgba(230,126,18,.1)}
+.g-row.dup-slate-row{background:rgba(155,89,182,.07)}
+.g-row.dup-slate-row:hover{background:rgba(155,89,182,.12)}
+.d-tbl tr.dup-slate-row td{background:rgba(155,89,182,.06)}
+
+/* template table */
+.tpl-tbl{width:100%;border-collapse:collapse;font-size:11px;margin-bottom:12px}
+.tpl-tbl th{background:var(--navy);color:var(--gold);padding:5px 8px;text-align:left;font-family:'Oswald',sans-serif;font-size:9px;letter-spacing:1px}
+.tpl-tbl td{padding:5px 8px;border-bottom:1px solid rgba(255,255,255,.05);color:var(--muted-lt)}
+.tpl-tbl td:first-child{color:var(--white);font-weight:600;font-family:'IBM Plex Mono',sans-serif;font-size:10px}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="hdr">
+  <div class="hdr-inner">
+    
+    <div class="hdr-titles">
+      <div class="hdr-title">Succession Planning Tool</div>
+      <div class="hdr-sub">fl16stuff@gmail.com</div>
+    </div>
+    <button class="guide-close-btn" style="position:static;float:none;margin:0;background:rgba(201,168,76,.1);border-color:rgba(201,168,76,.35);color:var(--gold)" onclick="document.getElementById('guideModal').classList.add('open')">? How to Use</button>
+    
+    <div class="hdr-tabs" id="hdrTabs" style="display:none">
+      <button class="tab active" onclick="switchView('dashboard')">Dashboard</button>
+      <button class="tab" onclick="switchView('table')">Data Table</button>
+      <button class="tab" onclick="switchView('gantt')">Gantt</button>
+    </div>
+  </div>
+</div>
+
+<!-- UPLOAD SCREEN -->
+<div id="uploadScreen">
+  <div style="text-align:center;margin-bottom:32px">
+    <div style="font-family:'Oswald',sans-serif;font-size:13px;letter-spacing:3px;text-transform:uppercase;color:var(--gold)">Select how you want to begin</div>
+  </div>
+  <div style="display:flex;gap:24px;flex-wrap:wrap;justify-content:center;max-width:860px;width:100%">
+
+    <!-- OPTION 1: Upload Excel -->
+    <div class="up-card" style="flex:1;min-width:280px;max-width:380px">
+      <div style="font-size:40px;margin-bottom:12px">📂</div>
+      <h2>Upload Excel File</h2>
+      <p>Drop your Key Leader Slate or Vantage export. All 21 columns are mapped automatically.</p>
+      <div class="drop-zone" id="dropZone" onclick="document.getElementById('fileIn').click()">
+        <p><strong>Drop .xlsx file here</strong><br/>or click to browse</p>
+      </div>
+      <input type="file" id="fileIn" accept=".xlsx,.xls" style="display:none" onchange="loadFile(event)"/>
+      <div class="up-actions">
+        <button class="btn btn-secondary btn-sm" onclick="showTplModal()">📋 Column Guide</button>
+        <button class="btn btn-gold btn-sm" onclick="downloadTemplate()">⬇ Template</button>
+      </div>
+    </div>
+
+    <!-- DIVIDER -->
+    <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;color:var(--muted-lt)">
+      <div style="width:1px;height:60px;background:var(--navy-border)"></div>
+      <span style="font-family:'Oswald',sans-serif;font-size:12px;letter-spacing:2px;text-transform:uppercase">or</span>
+      <div style="width:1px;height:60px;background:var(--navy-border)"></div>
+    </div>
+
+    <!-- OPTION 2: Start Blank -->
+    <div class="up-card" style="flex:1;min-width:280px;max-width:380px">
+      <div style="font-size:40px;margin-bottom:12px">✏️</div>
+      <h2>Start Manually</h2>
+      <p>Open a blank workspace and enter positions by hand. Add rows one at a time and import data later at any time.</p>
+      <button class="btn btn-primary" style="width:100%;margin-bottom:14px;padding:14px" onclick="startBlank()">Enter App →</button>
+      <p style="font-size:11px;color:var(--muted-lt);margin:0">You can still import or upload an Excel file once inside the app.</p>
+    </div>
+
+  </div>
+</div>
+
+<!-- MAIN APP -->
+<div id="mainApp">
+  <div class="app-wrap">
+
+    <!-- SIDEBAR -->
+    <div class="sidebar">
+      <div class="sb-section">
+        <div class="sb-label">Sheet / Battalion</div>
+        <div id="batList"></div>
+      </div>
+      <div class="sb-section">
+        <div class="sb-label">Grade</div>
+        <div class="chip-group" id="gradeChips"></div>
+      </div>
+      <div class="sb-section">
+        <div class="sb-label">Branch</div>
+        <div class="chip-group" id="branchChips"></div>
+      </div>
+      <div class="sb-section">
+        <div class="sb-label">Gap Status</div>
+        <div class="chip-group">
+          <button class="chip on" data-f="status" data-v="all" onclick="toggleChip(this)">All</button>
+          <button class="chip" data-f="status" data-v="gap" onclick="toggleChip(this)">Gap</button>
+          <button class="chip" data-f="status" data-v="covered" onclick="toggleChip(this)">Covered</button>
+          <button class="chip" data-f="status" data-v="unfilled" onclick="toggleChip(this)">Unfilled</button>
+        </div>
+      </div>
+      <div class="sb-section">
+        <div class="sb-label">ATAP Cycle</div>
+        <div class="chip-group">
+          <button class="chip on" data-f="atap" data-v="all" onclick="toggleChip(this)">All</button>
+          <button class="chip" data-f="atap" data-v="summer" onclick="toggleChip(this)">Summer</button>
+          <button class="chip" data-f="atap" data-v="winter" onclick="toggleChip(this)">Winter</button>
+        </div>
+      </div>
+      <div class="sb-section">
+        <div class="sb-label">Actions</div>
+        <div class="sb-actions">
+          <button class="btn btn-secondary btn-sm" onclick="renderAll()">↺ Refresh</button>
+          <button class="btn btn-primary btn-sm" onclick="openAddRow()">＋ Add Row</button>
+          <button class="btn btn-secondary btn-sm" onclick="document.getElementById('fileIn2').click()">↑ New File</button>
+          <input type="file" id="fileIn2" accept=".xlsx,.xls" style="display:none" onchange="loadFile(event)"/>
+          <button class="btn btn-secondary btn-sm" onclick="openImportModal()">⬆ Import Update</button>
+          <button class="btn btn-secondary btn-sm" onclick="openMassUpdate()">✏ Mass Update</button>
+          <button class="btn btn-gold btn-sm" onclick="exportExcel()">⬇ Export Excel</button>
+          <button class="btn btn-gold btn-sm" onclick="exportPPTX()">📊 Export PPTX</button>
+          <button class="btn btn-secondary btn-sm" onclick="toggleColPanel()">⚙ Columns</button>
+          <button class="btn btn-secondary btn-sm" onclick="window.print()">🖨 Print</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- CONTENT -->
+    <div class="content" style="display:flex;flex-direction:column;">
+      <div class="toolbar">
+        <span class="toolbar-label">Viewing:</span>
+        <span id="batLabel" style="font-family:'Oswald',sans-serif;font-size:12px;letter-spacing:1px;color:var(--white)"></span>
+        <span id="cntBadge" class="count-badge"></span>
+        <div class="toolbar-right">
+          <span id="alertBadge" style="display:none"></span>
+        </div>
+      </div>
+      <div id="dashView"></div>
+      <div id="tableView" style="display:none"></div>
+      <div id="ganttControls" style="display:none;padding:7px 14px;background:var(--navy-mid);border-bottom:1px solid var(--navy-border);display:none;align-items:center;gap:14px;flex-wrap:wrap;flex-shrink:0">
+        <span style="font-family:'Oswald',sans-serif;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold)">Year Range</span>
+        <div style="display:flex;align-items:center;gap:6px">
+          <label style="font-size:11px;color:var(--muted-lt)">From</label>
+          <select id="ganttYrFrom" onchange="applyGanttYears()" style="background:var(--navy);border:1px solid var(--navy-border);color:var(--white);padding:4px 8px;border-radius:3px;font-size:12px;font-family:'IBM Plex Sans',sans-serif"></select>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px">
+          <label style="font-size:11px;color:var(--muted-lt)">To</label>
+          <select id="ganttYrTo" onchange="applyGanttYears()" style="background:var(--navy);border:1px solid var(--navy-border);color:var(--white);padding:4px 8px;border-radius:3px;font-size:12px;font-family:'IBM Plex Sans',sans-serif"></select>
+        </div>
+        <button class="btn btn-secondary btn-sm" onclick="resetGanttYears()">Reset to Data Range</button>
+        <span id="ganttRangeLabel" style="font-size:11px;color:var(--muted-lt);margin-left:4px"></span>
+        <div style="margin-left:auto">
+          <button class="btn btn-gold btn-sm" onclick="exportGanttExcel()">⬇ Export Gantt Excel</button>
+        </div>
+      </div>
+      <div id="ganttView" style="display:none;overflow:auto;flex:1;min-height:0"></div>
+    </div>
+  </div>
+</div>
+
+<!-- COLUMN TOGGLE PANEL -->
+<div class="col-toggle-panel" id="colPanel">
+  <div class="col-toggle-title">Toggle Columns</div>
+  <div id="colToggleList"></div>
+  <div style="margin-top:10px;display:flex;gap:6px">
+    <button class="btn btn-secondary btn-sm" onclick="setAllCols(true)">Show All</button>
+    <button class="btn btn-secondary btn-sm" onclick="setAllCols(false)">Hide All</button>
+  </div>
+</div>
+
+<!-- DETAIL PANEL -->
+<div class="detail-panel" id="detailPanel">
+  <button class="dp-close" onclick="closeDetail()">×</button>
+  <div id="detailContent"></div>
+</div>
+
+<!-- ADD ROW MODAL -->
+<div class="modal-overlay" id="addRowModal">
+  <div class="modal">
+    <div class="modal-title">Add New Position</div>
+    <div class="modal-sub">Fill in any fields — all are optional. Leave blank for unknown. Click Save to add the row.</div>
+    <div class="form-grid" id="addRowForm"></div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closeAddRow()">Cancel</button>
+      <button class="btn btn-success" onclick="saveNewRow()">＋ Save Position</button>
+    </div>
+  </div>
+</div>
+
+<!-- IMPORT MODAL -->
+<div class="modal-overlay" id="importModal">
+  <div class="modal" style="max-width:960px">
+    <div class="modal-title">Import Data Update</div>
+    <div class="modal-sub">Upload a file in the same 21-column format. Match is by incumbent NAME (verbatim). Select which columns to overwrite — blank cells will still be applied if the column is selected.</div>
+
+    <!-- STEP 1: Upload -->
+    <div id="impStep1">
+      <div class="drop-zone" id="impDropZone" style="margin-bottom:14px" onclick="document.getElementById('impFileIn').click()">
+        <div class="drop-icon">📊</div>
+        <p><strong>Drop .xlsx file here</strong> or click to browse</p>
+      </div>
+      <input type="file" id="impFileIn" accept=".xlsx,.xls" style="display:none" onchange="loadImportFile(event)"/>
+    </div>
+
+    <!-- STEP 2: Column selector + preview (hidden until file loaded) -->
+    <div id="impStep2" style="display:none">
+
+      <div style="margin-bottom:14px">
+        <div style="font-family:'Oswald',sans-serif;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--gold);margin-bottom:8px">Step 1 — Select columns to update</div>
+        <div style="background:var(--navy);border:1px solid var(--navy-border);border-radius:4px;padding:12px">
+          <div style="display:flex;gap:8px;margin-bottom:8px">
+            <button class="btn btn-secondary btn-sm" onclick="setAllImpCols(true)">Check All</button>
+            <button class="btn btn-secondary btn-sm" onclick="setAllImpCols(false)">Uncheck All</button>
+          </div>
+          <div id="impColChecks" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:6px"></div>
+        </div>
+      </div>
+
+      <div>
+        <div style="font-family:'Oswald',sans-serif;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--gold);margin-bottom:8px">Step 2 — Review incoming records</div>
+        <div class="imp-preview" id="impPreview"></div>
+      </div>
+
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closeImportModal()">Cancel</button>
+      <button class="btn btn-primary" id="impConfirmBtn" onclick="confirmImport()" style="display:none">✓ Apply Updates</button>
+    </div>
+  </div>
+</div>
+
+<!-- TEMPLATE MODAL -->
+<!-- MASS UPDATE MODAL -->
+<div class="modal-overlay" id="massUpdateModal">
+  <div class="modal" style="max-width:560px">
+    <div class="modal-title">✏ Mass Update</div>
+    <div class="modal-sub">Select rows to update and choose a field + value to apply to all of them at once.</div>
+
+    <div style="margin-bottom:12px">
+      <label style="font-size:11px;color:var(--muted-lt);display:block;margin-bottom:6px">Field to update</label>
+      <select id="muField" class="dp-input dp-select" style="width:100%" onchange="muFieldChanged()">
+        <option value="">— Select field —</option>
+        <option value="section">Section</option>
+        <option value="brnch">Branch</option>
+        <option value="grade">Grade</option>
+        <option value="posco">Position Code</option>
+        <option value="uic">UIC</option>
+        <option value="tip">Time in Position</option>
+        <option value="slatName">Replacement Name</option>
+        <option value="slatRank">Replacement Rank</option>
+        <option value="slatMOS">Replacement MOS</option>
+      </select>
+    </div>
+
+    <div style="margin-bottom:14px">
+      <label style="font-size:11px;color:var(--muted-lt);display:block;margin-bottom:6px">New value</label>
+      <input id="muValue" class="dp-input" type="text" placeholder="Value to apply to all selected rows…" style="width:100%"/>
+    </div>
+
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+      <label style="font-size:11px;color:var(--muted-lt)">Select rows to update</label>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-secondary btn-xs" onclick="muSelectAll()">Select All</button>
+        <button class="btn btn-secondary btn-xs" onclick="muSelectNone()">Clear</button>
+        <input id="muSearch" class="dp-input" type="text" placeholder="Filter by name/title/section…"
+          style="width:160px;padding:3px 7px;font-size:11px" oninput="muRenderList()"/>
+      </div>
+    </div>
+
+    <div id="muList" style="max-height:280px;overflow-y:auto;border:1px solid var(--navy-border);border-radius:4px;background:var(--navy-mid)"></div>
+
+    <div id="muSummary" style="font-size:11px;color:var(--gold);margin-top:8px;min-height:18px"></div>
+
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closeMassUpdate()">Cancel</button>
+      <button class="btn btn-primary" onclick="confirmMassUpdate()">Apply to Selected</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="tplModal">
+  <div class="modal">
+    <div class="modal-title">Column Reference Guide</div>
+    <div class="modal-sub">These are the exact column headers expected in your Excel file. The tool will match columns by name (case-insensitive).</div>
+    <table class="tpl-tbl">
+      <thead><tr><th>Column</th><th>Full Name</th><th>Example</th><th>Notes</th></tr></thead>
+      <tbody id="tplBody"></tbody>
+    </table>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="document.getElementById('tplModal').classList.remove('open')">Close</button>
+      <button class="btn btn-gold" onclick="downloadTemplate()">⬇ Download Blank Template</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOASTS -->
+<div class="toasts" id="toasts"></div>
+
+<script>
+// ═══════════════════════════════════════════════
+// COLUMN DEFINITIONS — matches new baseline format
+// ═══════════════════════════════════════════════
+const COLS = [
+  { key:'uic',       hdr:'UIC',              full:'Unit Identification Code',       ex:'W4AAAA',       note:'Unit ID from FMS Web' },
+  { key:'edate',     hdr:'EDATE',            full:'Effective Date (MTOE/TDA)',       ex:'2023-10-01',   note:'From FMS Web' },
+  { key:'dmsl',      hdr:'DMSL',             full:'Document MSL',                    ex:'',             note:'' },
+  { key:'dml',       hdr:'DML',              full:'Document ML',                     ex:'',             note:'' },
+  { key:'parno1',    hdr:'PARNO1',           full:'Parent Unit Number (Primary)',    ex:'12345',        note:'' },
+  { key:'parno3',    hdr:'PARNO3',           full:'Parent Unit Number (Tertiary)',   ex:'67890',        note:'' },
+  { key:'perln',     hdr:'PERLN',            full:'Personnel Line Number',           ex:'00001',        note:'Position line number' },
+  { key:'grade',     hdr:'GRADE',            full:'Required Grade',                  ex:'O4',           note:'E.g. O3, O4, W2' },
+  { key:'posco',     hdr:'POSCO',            full:'Position Code',                   ex:'15C00',        note:'' },
+  { key:'psntl',     hdr:'PSNTL',            full:'Duty Title',                      ex:'S3',           note:'Position title — used as unique ID' },
+  { key:'brnch',     hdr:'BRNCH',            full:'Branch',                          ex:'AV',           note:'Branch/AOC designator' },
+  { key:'rqstr',     hdr:'RQSTR',            full:'Required Strength',               ex:'1',            note:'' },
+  { key:'austr',     hdr:'AUSTR',            full:'Authorized Strength',             ex:'1',            note:'' },
+  { key:'section',    hdr:'SECTION',          full:'Section / Element',               ex:'S1',           note:'Organizational section' },
+  { key:'incName',   hdr:'NAME (Inc)',        full:'Incumbent Name',                  ex:'Smith, John A.',note:'Last, First MI' },
+  { key:'incRank',   hdr:'RANK (Inc)',        full:'Incumbent Rank',                  ex:'MAJ',          note:'' },
+  { key:'incMOS',    hdr:'AOC/MOS',           full:'Incumbent AOC or MOS',            ex:'15C35',        note:'' },
+  { key:'sd',        hdr:'START DATE',        full:'Assume Duty Date',                ex:'2022-06-15',   note:'' },
+  { key:'tip',       hdr:'TIME IN POSITION',  full:'Time in Position',                ex:'18',           note:'Months' },
+  { key:'ymav',      hdr:'YMAV',              full:'Year/Month Available',            ex:'202505',       note:'YYYYMM format' },
+  { key:'slatName',  hdr:'NAME (Slat)',        full:'Replacement Name',                ex:'Jones, Mary B.',note:'' },
+  { key:'slatArrive',hdr:'ARRIVAL DATE',      full:'Replacement Report Date',         ex:'2025-06-01',   note:'DTRASG' },
+  { key:'slatRank',  hdr:'RANK (Slat)',        full:'Replacement Rank',                ex:'CPT',          note:'' },
+  { key:'slatMOS',   hdr:'MOS (Slat)',         full:'Replacement MOS',                 ex:'15C',          note:'' },
+];
+
+// Column visibility state
+let colVis = {};
+COLS.forEach(c => colVis[c.key] = true);
+
+// Extra columns auto-detected from uploaded file (beyond the 21 known)
+let EXTRA_COLS = []; // [{ key, hdr, full }]
+
+function registerExtraCols(headers) {
+  const knownHl = new Set();
+  Object.keys(HDR_MAP).forEach(k => knownHl.add(k));
+  ['name','rank','mos'].forEach(k => knownHl.add(k));
+  COLS.forEach(c => knownHl.add(c.hdr.toLowerCase()));
+  headers.forEach(h => {
+    const hl = (h||'').toString().trim().toLowerCase();
+    const key = 'extra_' + hl.replace(/[^a-z0-9]+/g,'_').replace(/^_|_$/g,'');
+    if (!hl || knownHl.has(hl)) return;
+    if (EXTRA_COLS.find(e => e.key === key)) return;
+    EXTRA_COLS.push({ key, hdr: h.trim(), full: h.trim() });
+    colVis[key] = true;
+  });
+}
+
+// ═══════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════
+let S = {
+  sheets: {},        // { sheetName: [rows] }
+  activeSheet: null,
+  overrides: {},     // { rowId: { depDate, atapOv, notes } }
+  filters: { grade: new Set(['all']), branch: new Set(['all']), status:'all', atap:'all' },
+  view: 'dashboard',
+  impData: [],
+  impSel: new Set(),
+  nextId: 1,
+  ganttYrFrom: null, // null = auto from data
+  ganttYrTo: null,
+  activeDrillCard: null,
+};
+
+// ═══════════════════════════════════════════════
+// COLUMN MAP — map Excel headers → our keys
+// ═══════════════════════════════════════════════
+const HDR_MAP = {
+  // MTOE / admin
+  'uic':'uic','edate':'edate','dmsl':'dmsl','dml':'dml','section':'section','parno1':'parno1','parno3':'parno3','perln':'perln',
+  'grade':'grade','gr':'grade','posco':'posco','psntl':'psntl','duty title':'psntl',
+  'brnch':'brnch','branch':'brnch','rqstr':'rqstr','austr':'austr',
+  // incumbent
+  'name (inc)':'incName','inc_name':'incName','incumbent name':'incName',
+  'rank (inc)':'incRank','inc_rank':'incRank','incumbent rank':'incRank',
+  'aoc/mos':'incMOS','aoc':'incMOS','inc_mos':'incMOS','incumbent mos':'incMOS',
+  'start date':'sd','assume duty date':'sd','inc_sd':'sd',
+  'time in position':'tip','tip':'tip',
+  'ymav':'ymav',
+  // replacement
+  'name (slat)':'slatName','slated_name':'slatName','replacement name':'slatName',
+  'rank (slat)':'slatRank','slated_rank':'slatRank','replacement rank':'slatRank',
+  'mos (slat)':'slatMOS','slated_mos':'slatMOS','replacement mos':'slatMOS',
+  'arrival date':'slatArrive','slated_dtrasg':'slatArrive','dtrasg':'slatArrive','report date':'slatArrive',
+};
+
+function mapRow(rawRow, headers) {
+  const r = { id: 'r' + (S.nextId++), _manual: false };
+  const knownHl = new Set(Object.keys(HDR_MAP).concat(['name','rank','mos']));
+  // Track which NAME/RANK/MOS we've seen to handle duplicate headers
+  let nameSeen = 0, rankSeen = 0, mosSeen = 0;
+  headers.forEach((h, i) => {
+    const hl = (h||'').toString().trim().toLowerCase();
+    const val = rawRow[i] != null ? rawRow[i] : '';
+    if (hl === 'name') { nameSeen++; if (nameSeen === 1) r.incName = val; else r.slatName = val; return; }
+    if (hl === 'rank') { rankSeen++; if (rankSeen === 1) r.incRank = val; else r.slatRank = val; return; }
+    if (hl === 'mos')  { mosSeen++;  if (mosSeen  === 1) r.incMOS  = val; else r.slatMOS  = val; return; }
+    if (HDR_MAP[hl]) { r[HDR_MAP[hl]] = val; return; }
+    // Unknown column — store under auto key
+    if (hl) {
+      const key = 'extra_' + hl.replace(/[^a-z0-9]+/g,'_').replace(/^_|_$/g,'');
+      r[key] = val;
+    }
+  });
+  // Normalize YMAV to YYYYMM string format
+  r.ymav = normalizeYmav(r.ymav);
+  // Dates
+  r.sdDate      = parseDate(r.sd);
+  r.ymavDate    = ymavToDate(r.ymav);
+  r.slatDate    = parseDate(r.slatArrive);
+  return r;
+}
+
+// Convert Excel serial number to JS Date
+function excelSerialToDate(serial) {
+  // Excel epoch is Dec 30 1899; adjust for leap year bug
+  const d = new Date((serial - 25569) * 86400 * 1000);
+  // Force UTC to avoid timezone shift
+  return new Date(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate());
+}
+
+function parseDate(v) {
+  if (v == null || v === '') return null;
+  if (v instanceof Date) return isNaN(v) ? null : v;
+  // Excel serial date — any number that looks like a date serial (1 Jan 1900 = 1, 1 Jan 2100 ~= 73050)
+  if (typeof v === 'number' && v > 0 && v < 73050) return excelSerialToDate(v);
+  if (typeof v === 'string' && v.trim()) {
+    // Handle YYYYMM as a date string (treat as 1st of that month)
+    const s = v.trim().replace(/\D/g,'');
+    if (s.length === 6 && parseInt(s.slice(0,4)) > 2000) {
+      return new Date(parseInt(s.slice(0,4)), parseInt(s.slice(4,6))-1, 1);
+    }
+    const d = new Date(v.trim());
+    return isNaN(d) ? null : d;
+  }
+  return null;
+}
+
+// Format a YMAV value for display as YYYYMM
+function normalizeYmav(v) {
+  if (v == null || v === '') return '';
+  const s = v.toString().trim().replace(/\D/g,'');
+  // Already YYYYMM (6 digits, year looks sane)
+  if (s.length === 6 && parseInt(s.slice(0,4)) > 2000) return s;
+  // YYYYMMDD — truncate to YYYYMM
+  if (s.length >= 8 && parseInt(s.slice(0,4)) > 2000) return s.slice(0,6);
+  // Excel serial date (roughly 1900-2100 = 1 to 73050)
+  if (typeof v === 'number' && v > 0 && v < 73050 && v < 200000) {
+    const d = excelSerialToDate(v);
+    if (d.getFullYear() > 2000) {
+      return d.getFullYear() + '' + String(d.getMonth()+1).padStart(2,'0');
+    }
+  }
+  return v.toString();
+}
+
+// Same logic for ymavToDate — re-parse from normalized string
+function ymavToDate(v) {
+  if (v == null || v === '') return null;
+  const norm = normalizeYmav(v);
+  const s = norm.replace(/\D/g,'');
+  if (s.length >= 6 && parseInt(s.slice(0,4)) > 2000) {
+    return new Date(parseInt(s.slice(0,4)), parseInt(s.slice(4,6))-1, 1);
+  }
+  return null;
+}
+
+// ═══════════════════════════════════════════════
+// FILE LOADING
+// ═══════════════════════════════════════════════
+function startBlank() {
+  // Create one empty sheet to start
+  S.sheets['New Unit'] = [];
+  S.activeSheet = 'New Unit';
+  initApp();
+  toast('Blank workspace ready — use + Add Row to begin.');
+}
+
+function loadFile(ev) {
+  const file = ev.target.files[0]; if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const wb = XLSX.read(e.target.result, { type:'array', raw:true, cellDates:false });
+      S.sheets = {};
+      EXTRA_COLS = [];
+      wb.SheetNames.forEach(name => {
+        const ws = wb.Sheets[name];
+        const raw = XLSX.utils.sheet_to_json(ws, { header:1, defval:null, raw:true });
+        if (raw.length < 2) return;
+        // Find header row (row with PSNTL or GRADE or NAME)
+        let hdrIdx = 0;
+        for (let i=0;i<Math.min(5,raw.length);i++) {
+          const r = raw[i].map(c=>(c||'').toString().toLowerCase());
+          if (r.includes('psntl')||r.includes('grade')||r.includes('name')) { hdrIdx=i; break; }
+        }
+        const headers = raw[hdrIdx].map(c=>(c||'').toString().trim());
+        registerExtraCols(headers);
+        const rows = [];
+        for (let i=hdrIdx+1;i<raw.length;i++) {
+          const rawRow = raw[i];
+          if (!rawRow || rawRow.every(c=>!c)) continue;
+          const r = mapRow(rawRow, headers);
+          if (!r.psntl && !r.incName && !r.grade) continue;
+          rows.push(r);
+        }
+        if (rows.length) S.sheets[name] = rows;
+      });
+      if (!Object.keys(S.sheets).length) { toast('No valid data found in file.','err'); return; }
+      S.activeSheet = Object.keys(S.sheets)[0];
+      initApp();
+      toast(`Loaded ${Object.keys(S.sheets).length} sheet(s) — ${Object.values(S.sheets).flat().length} positions.`);
+    } catch(err) { console.error(err); toast('Parse error: '+err.message,'err'); }
+  };
+  reader.readAsArrayBuffer(file);
+  ev.target.value='';
+}
+
+// ═══════════════════════════════════════════════
+// BUSINESS LOGIC
+// ═══════════════════════════════════════════════
+function effDep(r) {
+  const ov = S.overrides[r.id];
+  if (ov?.depDate) return new Date(ov.depDate);
+  return r.ymavDate;
+}
+function atapCycle(r) {
+  const ov = S.overrides[r.id];
+  if (ov?.atapOv) return ov.atapOv;
+  const d = effDep(r); if (!d) return null;
+  const m = d.getMonth()+1;
+  return (m>=4&&m<=9)?'Summer':'Winter';
+}
+function backfillDate(r) {
+  const d = effDep(r); if (!d) return null;
+  const b = new Date(d); b.setFullYear(b.getFullYear()-1); return b;
+}
+function gapMonths(r) {
+  const dep = effDep(r);
+  if (!dep||!r.slatDate) return null;
+  const diff = r.slatDate - dep;
+  if (diff<=0) return 0;
+  return Math.round(diff/(1000*60*60*24*30.5));
+}
+function mismatch(r) {
+  const ov = S.overrides[r.id];
+  if (!ov?.depDate||!r.ymavDate) return false;
+  return Math.abs(new Date(ov.depDate)-r.ymavDate)>(30*24*60*60*1000);
+}
+const GRADE_RANK_MAP = {
+  // By paygrade code
+  'E1':['PV1'],'E2':['PV2'],'E3':['PFC'],'E4':['SPC','CPL'],
+  'E5':['SGT'],'E6':['SSG'],'E7':['SFC'],'E8':['MSG','1SG'],
+  'E9':['SGM','CSM','SMA'],
+  'W1':['WO1'],'W2':['CW2'],'W3':['CW3'],'W4':['CW4'],'W5':['CW5'],
+  'O1':['2LT'],'O2':['1LT'],'O3':['CPT'],
+  'O4':['MAJ'],'O5':['LTC'],'O6':['COL'],
+  'O7':['BG'],'O8':['MG'],'O9':['LTG'],'O10':['GEN'],
+  // By rank word (in case GRADE column stores "MAJ" instead of "O4")
+  'PV1':['PV1'],'PV2':['PV2'],'PFC':['PFC'],'SPC':['SPC'],'CPL':['CPL'],
+  'SGT':['SGT'],'SSG':['SSG'],'SFC':['SFC'],'MSG':['MSG'],'1SG':['1SG'],
+  'SGM':['SGM'],'CSM':['CSM'],
+  'WO1':['WO1'],'CW2':['CW2'],'CW3':['CW3'],'CW4':['CW4'],'CW5':['CW5'],
+  '2LT':['2LT'],'1LT':['1LT'],'CPT':['CPT'],
+  'MAJ':['MAJ'],'LTC':['LTC'],'COL':['COL'],
+  'BG':['BG'],'MG':['MG'],'LTG':['LTG'],'GEN':['GEN'],
+};
+
+// Human-readable label for a grade code or rank word
+function gradeLabel(g) {
+  const map = {'O1':'O1/2LT','O2':'O2/1LT','O3':'O3/CPT','O4':'O4/MAJ','O5':'O5/LTC','O6':'O6/COL'};
+  return map[g.toUpperCase()] || g;
+}
+
+function gradeMismatch(r) {
+  if (S.overrides[r.id] && S.overrides[r.id].gradeRankAck) return false;
+  const grade = str(r.grade).toUpperCase().trim();
+  const rank  = str(r.incRank).toUpperCase().trim();
+  if (!grade || !rank) return false;
+  const expected = GRADE_RANK_MAP[grade];
+  if (!expected) return false;  // unknown grade — no alert
+  return !expected.map(e=>e.toUpperCase()).includes(rank);
+}
+function rowStatus(r) {
+  if (!r.incRank&&!r.incName) return 'unfilled';
+  const dep=effDep(r);
+  if (dep&&r.slatDate&&r.slatDate>dep) return 'gap';
+  if (!r.slatDate&&dep) return 'gap';
+  return 'covered';
+}
+
+// Build a map of slatName -> [rowIds] across ALL sheets (not just filtered)
+function buildSlatNameMap() {
+  const map = {};
+  Object.values(S.sheets).flat().forEach(r => {
+    const n = str(r.slatName).trim().toUpperCase();
+    if (!n) return;
+    if (!map[n]) map[n] = [];
+    map[n].push(r.id);
+  });
+  return map;
+}
+
+// Returns true if this row's slated name appears on another row too
+function dupSlate(r, slatMap) {
+  const n = str(r.slatName).trim().toUpperCase();
+  if (!n) return false;
+  const ids = slatMap[n] || [];
+  return ids.length > 1;
+}
+
+// Returns true if incumbent exists but has NO replacement slated
+function noReplacement(r) {
+  const hasIncumbent = !!(str(r.incName).trim() || str(r.incRank).trim());
+  return hasIncumbent && !str(r.slatName).trim();
+}
+
+// KD enabled for this row?
+function kdEnabled(r) {
+  return !!(S.overrides[r.id]?.kdOn);
+}
+function fmtDate(d) {
+  if (!d) return '—';
+  return d.toLocaleDateString('en-US',{month:'short',year:'numeric'});
+}
+function fmtDateSh(d) {
+  if (!d) return '';
+  const m=['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+  return m[d.getMonth()]+' '+d.getFullYear();
+}
+function str(v) { return v!=null&&v!==''?String(v).trim():''; }
+
+// ═══════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════
+function initApp() {
+  document.getElementById('uploadScreen').style.display='none';
+  document.getElementById('mainApp').style.display='block';
+  document.getElementById('hdrTabs').style.display='flex';
+  buildColPanel();
+  buildSidebar();
+  renderAll();
+}
+
+function buildColPanel() {
+  const list = document.getElementById('colToggleList');
+  const mkItem = c => `
+    <div class="col-toggle-item">
+      <input type="checkbox" class="col-toggle-cb" id="ctcb_${c.key}" ${colVis[c.key]!==false?'checked':''}
+        onchange="toggleCol('${c.key}',this.checked)"/>
+      <label for="ctcb_${c.key}" class="col-toggle-name" style="cursor:pointer">${c.hdr}${c.full!==c.hdr?' — <span style="font-size:10px;color:var(--muted)">'+c.full+'</span>':''}</label>
+    </div>`;
+  let html = COLS.map(mkItem).join('');
+  if (EXTRA_COLS.length) {
+    html += `<div style="font-size:9px;color:var(--gold);letter-spacing:2px;text-transform:uppercase;margin:10px 0 4px;padding-top:8px;border-top:1px solid rgba(255,255,255,.08)">Custom Columns</div>`;
+    html += EXTRA_COLS.map(mkItem).join('');
+  }
+  list.innerHTML = html;
+}
+
+function toggleCol(key,vis) {
+  colVis[key]=vis;
+  document.querySelectorAll(`.col-${key}`).forEach(el=>el.classList.toggle('hidden-col',!vis));
+}
+function setAllCols(vis) {
+  [...COLS,...EXTRA_COLS].forEach(c=>{ colVis[c.key]=vis; const cb=document.getElementById('ctcb_'+c.key); if(cb)cb.checked=vis; toggleCol(c.key,vis); });
+}
+function toggleColPanel() { document.getElementById('colPanel').classList.toggle('open'); }
+
+function buildSidebar() {
+  // Sheets
+  const bl = document.getElementById('batList'); bl.innerHTML='';
+  Object.keys(S.sheets).forEach(name=>{
+    const b=document.createElement('button');
+    b.className='bat-btn'+(name===S.activeSheet?' on':'');
+    b.textContent=name; b.title=name;
+    b.onclick=()=>{ S.activeSheet=name; S.activeDrillCard=null; buildSidebar(); renderAll(); };
+    bl.appendChild(b);
+  });
+  // Grade chips
+  const all = Object.values(S.sheets).flat();
+  const grades=[...new Set(all.map(r=>str(r.grade)).filter(Boolean))].sort();
+  const branches=[...new Set(all.map(r=>str(r.brnch)).filter(Boolean))].sort();
+  const gc=document.getElementById('gradeChips');
+  gc.innerHTML=`<button class="chip ${S.filters.grade.has('all')?'on':''}" data-f="grade" data-v="all" onclick="toggleChip(this)">All</button>`
+    +grades.map(g=>`<button class="chip" data-f="grade" data-v="${g}" onclick="toggleChip(this)">${g}</button>`).join('');
+  const bc=document.getElementById('branchChips');
+  bc.innerHTML=`<button class="chip ${S.filters.branch.has('all')?'on':''}" data-f="branch" data-v="all" onclick="toggleChip(this)">All</button>`
+    +branches.map(b=>`<button class="chip" data-f="branch" data-v="${b}" onclick="toggleChip(this)">${b}</button>`).join('');
+}
+
+function toggleChip(btn) {
+  const f=btn.dataset.f, v=btn.dataset.v;
+  if (f==='grade'||f==='branch') {
+    const set=S.filters[f];
+    if (v==='all'){set.clear();set.add('all');}
+    else{set.delete('all');set.has(v)?set.delete(v):set.add(v);if(!set.size)set.add('all');}
+    btn.closest('.chip-group').querySelectorAll('.chip').forEach(c=>c.classList.toggle('on',set.has(c.dataset.v)));
+  } else {
+    S.filters[f]=v;
+    btn.closest('.chip-group').querySelectorAll('.chip').forEach(c=>c.classList.remove('on'));
+    btn.classList.add('on');
+  }
+  renderAll();
+}
+
+function filtered() {
+  const rows=S.sheets[S.activeSheet]||[];
+  return rows.filter(r=>{
+    if (!S.filters.grade.has('all')&&!S.filters.grade.has(str(r.grade))) return false;
+    if (!S.filters.branch.has('all')&&!S.filters.branch.has(str(r.brnch))) return false;
+    if (S.filters.status!=='all'&&rowStatus(r)!==S.filters.status) return false;
+    const at=atapCycle(r);
+    if (S.filters.atap==='summer'&&at!=='Summer') return false;
+    if (S.filters.atap==='winter'&&at!=='Winter') return false;
+    return true;
+  });
+}
+
+function renderAll() {
+  const rows=filtered();
+  const total=(S.sheets[S.activeSheet]||[]).length;
+  document.getElementById('batLabel').textContent=S.activeSheet||'';
+  document.getElementById('cntBadge').innerHTML=
+    rows.length<total
+      ? `${total} total &nbsp;·&nbsp; <span style="color:var(--gold)">${rows.length} shown</span>`
+      : `${total} position${total!==1?'s':''}`;
+  const mis=rows.filter(r=>mismatch(r)).length;
+  const ab=document.getElementById('alertBadge');
+  if (mis>0){ ab.style.display='inline'; ab.innerHTML=`<span class="badge b-alert">⚑ ${mis} YMAV Mismatch${mis>1?'es':''}</span>`; }
+  else ab.style.display='none';
+  if (S.view==='dashboard') renderDash(rows);
+  else if (S.view==='table') renderTable(rows);
+  else renderGantt(rows);
+}
+
+function switchView(v) {
+  S.view=v;
+  document.getElementById('dashView').style.display=v==='dashboard'?'block':'none';
+  document.getElementById('tableView').style.display=v==='table'?'block':'none';
+  document.getElementById('ganttView').style.display=v==='gantt'?'flex':'none';
+  const gc = document.getElementById('ganttControls');
+  if(gc) gc.style.display=v==='gantt'?'flex':'none';
+  document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t.textContent.toLowerCase().includes(v==='table'?'data':v)));
+  renderAll();
+}
+
+// ═══════════════════════════════════════════════
+// DASHBOARD
+// ═══════════════════════════════════════════════
+function drillCard(key) {
+  S.activeDrillCard = (S.activeDrillCard === key) ? null : key;
+  renderAll();
+  // Scroll drill panel into view
+  if (S.activeDrillCard) setTimeout(() => {
+    const dp = document.querySelector('.drill-panel');
+    if (dp) dp.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }, 50);
+}
+
+function renderDrillPanel(rows, key) {
+  const _sm = buildSlatNameMap();
+  const titles = {
+    gap:      '⚠ Gapped Positions',
+    unfilled: '○ Unfilled Positions',
+    ymav:     '⚑ YMAV Mismatches',
+    grade:    '⚑ Grade / Rank Mismatches',
+    norep:    '○ No Replacement Slated',
+    dupslate: '⚑ Duplicate Replacement Names',
+    summer:   '☀ Summer Movers',
+    winter:   '❄ Winter Movers',
+  };
+  const filters = {
+    gap:      r => rowStatus(r) === 'gap',
+    unfilled: r => rowStatus(r) === 'unfilled',
+    ymav:     r => mismatch(r),
+    grade:    r => gradeMismatch(r),
+    norep:    r => noReplacement(r),
+    dupslate: r => dupSlate(r, _sm),
+    summer:   r => atapCycle(r) === 'Summer',
+    winter:   r => atapCycle(r) === 'Winter',
+  };
+  const drillRows = rows.filter(filters[key]);
+  const title = titles[key] || key;
+
+  let t = `<div class="drill-panel">
+    <div class="drill-panel-header">
+      <span class="drill-panel-title">${title} &nbsp;<span style="color:var(--muted-lt);font-size:11px">${drillRows.length} position${drillRows.length!==1?'s':''}</span></span>
+      <button class="drill-panel-close" onclick="drillCard('${key}')" title="Close">✕</button>
+    </div>`;
+
+  if (!drillRows.length) {
+    t += `<div style="padding:18px;color:var(--muted-lt);font-size:12px;text-align:center">No positions in this category.</div></div>`;
+    return t;
+  }
+
+  t += `<div class="d-tbl-wrap"><table class="d-tbl"><thead><tr>
+    <th>Duty Title</th><th>Section</th><th>Grade</th><th>Rank</th><th>Incumbent</th><th>YMAV</th>`;
+
+  if (key === 'ymav')   t += `<th>Override Dep</th><th>Δ Days</th>`;
+  if (key === 'grade')  t += `<th>Expected Rank</th>`;
+  if (key === 'gap')    t += `<th>Arrival</th><th>Gap (mo)</th>`;
+  if (key === 'summer' || key === 'winter') t += `<th>Dep Date</th><th>Backfill By</th><th>ATAP</th>`;
+  if (key === 'unfilled') t += `<th>Branch</th><th>Position Code</th>`;
+  if (key === 'norep')   t += `<th>Branch</th><th>YMAV</th><th>Backfill By</th>`;
+  if (key === 'dupslate') t += `<th>Slated Name</th><th>Also Used For</th>`;
+
+  t += `</tr></thead><tbody>`;
+
+  drillRows.forEach(r => {
+    const dep = effDep(r), at = atapCycle(r), gap = gapMonths(r);
+    const exp = GRADE_RANK_MAP[str(r.grade).toUpperCase()];
+    const delta = (mismatch(r) && r.ymavDate && dep)
+      ? Math.round(Math.abs(dep - r.ymavDate) / (1000*60*60*24)) : null;
+
+    t += `<tr onclick="openDetail('${r.id}')" style="cursor:pointer">
+      <td style="color:var(--white);font-weight:600">${str(r.psntl)||'—'}</td>
+      <td style="color:var(--gold)">${str(r.section)||'—'}</td>
+      <td style="color:var(--gold);font-family:'Oswald',sans-serif">${str(r.grade)||'—'}</td>
+      <td style="font-family:'Oswald',sans-serif">${str(r.incRank)||'—'}</td>
+      <td>${str(r.incName)||'<span style="color:var(--muted-lt)">Unfilled</span>'}</td>
+      <td style="font-family:'IBM Plex Mono',sans-serif;font-size:11px">${str(r.ymav)||'—'}</td>`;
+
+    if (key === 'ymav')
+      t += `<td style="color:var(--warning)">${fmtDate(dep)}</td>
+             <td style="color:var(--scarlet-lt);font-weight:700">${delta!==null?delta+' days':'—'}</td>`;
+    if (key === 'grade')
+      t += `<td style="color:var(--warning)">${exp ? exp.join(' / ') : '—'}</td>`;
+    if (key === 'gap')
+      t += `<td>${fmtDate(r.slatDate)}</td>
+             <td style="color:var(--danger);font-weight:700">${gap!==null?gap+' mo':'—'}</td>`;
+    if (key === 'summer' || key === 'winter')
+      t += `<td>${fmtDate(dep)}</td>
+             <td style="color:var(--warning)">${fmtDate(backfillDate(r))}</td>
+             <td><span class="badge b-${at?at.toLowerCase():'unf'}">${at||'—'}</span></td>`;
+    if (key === 'unfilled')
+      t += `<td>${str(r.brnch)||'—'}</td><td style="font-family:'IBM Plex Mono',sans-serif;font-size:11px">${str(r.posco)||'—'}</td>`;
+    if (key === 'norep')
+      t += `<td>${str(r.brnch)||'—'}</td><td style="font-family:'IBM Plex Mono',sans-serif;font-size:11px">${str(r.ymav)||'—'}</td><td style="color:var(--warning)">${fmtDate(backfillDate(r))}</td>`;
+    if (key === 'dupslate') {
+      const nm = str(r.slatName).trim().toUpperCase();
+      const dupeRows = (_sm[nm]||[]).filter(id=>id!==r.id);
+      const dupeNames = dupeRows.map(id=>{
+        const dr = Object.values(S.sheets).flat().find(x=>x.id===id);
+        return dr ? str(dr.psntl) : id;
+      }).join(', ');
+      t += `<td style="color:#c39bd3;font-weight:600">${str(r.slatName)||'—'}</td>
+             <td style="color:var(--warning);font-size:10px">${dupeNames||'—'}</td>`;
+    }
+
+    t += `</tr>`;
+  });
+
+  t += `</tbody></table></div></div>`;
+  return t;
+}
+
+function renderDash(rows) {
+  const total=rows.length;
+  const gaps=rows.filter(r=>rowStatus(r)==='gap').length;
+  const unf=rows.filter(r=>rowStatus(r)==='unfilled').length;
+  const mis=rows.filter(r=>mismatch(r)).length;
+  const sum=rows.filter(r=>atapCycle(r)==='Summer').length;
+  const win=rows.filter(r=>atapCycle(r)==='Winter').length;
+  const now=new Date(), in12=new Date(now); in12.setFullYear(in12.getFullYear()+1);
+  const upcoming=rows.filter(r=>{ const b=backfillDate(r); return b&&b>=now&&b<=in12; });
+
+  const grMisDash=rows.filter(r=>gradeMismatch(r)).length;
+  const activeCard = S.activeDrillCard || null;
+  const cardCls = (key) => `stat-card clickable${activeCard===key?' active':''}`;
+  let h=`<div class="stat-grid">
+    <div class="stat-card b"><div class="sv">${total}</div><div class="sl">Total Positions</div></div>
+    <div class="${cardCls('gap')}" onclick="drillCard('gap')" title="Click to see gapped positions"><div class="sv">${gaps}</div><div class="sl">Gapped ▾</div></div>
+    <div class="${cardCls('unfilled')}" onclick="drillCard('unfilled')" title="Click to see unfilled positions"><div class="sv">${unf}</div><div class="sl">Unfilled ▾</div></div>
+    <div class="${cardCls('ymav')}" onclick="drillCard('ymav')" title="Click to see YMAV mismatches"><div class="sv">${mis}</div><div class="sl">YMAV Mismatches ▾</div></div>
+    <div class="${cardCls('grade')}" onclick="drillCard('grade')" title="Click to see grade/rank mismatches"><div class="sv" style="color:#f0a500">${grMisDash}</div><div class="sl">Grade/Rank Mismatches ▾</div></div>
+    <div class="${cardCls('summer')}" onclick="drillCard('summer')" title="Click to see Summer movers"><div class="sv" style="color:var(--scarlet-lt)">${sum}</div><div class="sl">Summer Movers ▾</div></div>
+    <div class="${cardCls('winter')}" onclick="drillCard('winter')" title="Click to see Winter movers"><div class="sv" style="color:#85c1e9">${win}</div><div class="sl">Winter Movers ▾</div></div>
+  </div>
+  ${activeCard ? renderDrillPanel(rows, activeCard) : ''}`;
+
+  if (upcoming.length) {
+    h+=`<div class="sec-title">⚠ Backfill Requests Due Within 12 Months</div>
+    <div class="d-tbl-wrap"><table class="d-tbl"><thead><tr>
+      <th>Duty Title</th><th>Grade</th><th>Rank</th><th>Incumbent</th><th>YMAV</th><th>Dep Date</th><th>Request By</th><th>ATAP</th>
+    </tr></thead><tbody>`;
+    upcoming.sort((a,b)=>backfillDate(a)-backfillDate(b)).forEach(r=>{
+      const dep=effDep(r),req=backfillDate(r),at=atapCycle(r),past=req<now;
+      h+=`<tr class="${past?'alert-row':''}" onclick="openDetail('${r.id}')" style="cursor:pointer">
+        <td style="color:var(--white);font-weight:600">${str(r.psntl)||'—'}</td>
+        <td style="color:var(--gold);font-family:'Oswald',sans-serif">${str(r.grade)||'—'}</td>
+        <td style="font-family:'Oswald',sans-serif">${str(r.incRank)||'—'}</td>
+        <td>${str(r.incName)||'—'}</td>
+        <td style="font-family:'IBM Plex Mono',sans-serif;font-size:11px">${str(r.ymav)||'—'}</td>
+        <td>${fmtDate(dep)}</td>
+        <td style="color:${past?'var(--scarlet-lt)':'var(--warning)'};font-weight:600">${fmtDate(req)}</td>
+        <td><span class="badge b-${at?at.toLowerCase():'unf'}">${at||'—'}</span></td>
+      </tr>`;
+    });
+    h+=`</tbody></table></div>`;
+  }
+
+  h+=`<div class="sec-title">All Positions — Succession Summary</div>
+  <div class="d-tbl-wrap"><table class="d-tbl"><thead><tr>
+    <th>Duty Title</th><th>Grade</th><th>Rank</th><th>Branch</th><th>AOC/MOS</th>
+    <th>Incumbent</th><th>Start Date</th><th>YMAV</th>
+    <th>Slated</th><th>Arrival</th>
+    <th>Gap (mo)</th><th>Backfill By</th><th>ATAP</th><th>Status</th><th>⚑</th>
+  </tr></thead><tbody>`;
+  rows.forEach(r=>{
+    const dep=effDep(r),req=backfillDate(r),at=atapCycle(r),gap=gapMonths(r),st=rowStatus(r),mm=mismatch(r);
+    h+=`<tr class="${mm?'alert-row':st==='gap'?'gap-row':''}" onclick="openDetail('${r.id}')" style="cursor:pointer">
+      <td style="color:var(--white);font-weight:600">${str(r.psntl)||'—'}</td>
+      <td style="color:var(--gold);font-family:'Oswald',sans-serif">${str(r.grade)||'—'}</td>
+      <td style="font-family:'Oswald',sans-serif">${str(r.incRank)||'—'}</td>
+      <td style="color:var(--muted-lt)">${str(r.brnch)||'—'}</td>
+      <td style="font-family:'IBM Plex Mono',sans-serif;font-size:11px;color:var(--muted-lt)">${str(r.incMOS)||'—'}</td>
+      <td>${str(r.incName)||'<span style="color:var(--muted-lt)">—</span>'}</td>
+      <td style="color:var(--muted-lt)">${fmtDate(r.sdDate)}</td>
+      <td style="font-family:'IBM Plex Mono',sans-serif;font-size:11px;color:${mm?'var(--scarlet-lt)':'inherit'}">${str(r.ymav)||'—'}</td>
+      <td style="color:var(--muted-lt)">${str(r.slatName)||'—'}</td>
+      <td style="color:var(--muted-lt)">${fmtDate(r.slatDate)}</td>
+      <td>${gap!==null?`<span style="color:${gap>0?'var(--danger)':'var(--success)'};font-weight:700">${gap}</span>`:'—'}</td>
+      <td style="color:var(--warning)">${fmtDate(req)}</td>
+      <td>${at?`<span class="badge b-${at.toLowerCase()}">${at}</span>`:'—'}</td>
+      <td><span class="badge b-${st}">${st}</span></td>
+      <td>${mm?'<span style="color:var(--scarlet-lt)">⚑</span>':''}</td>
+    </tr>`;
+  });
+  h+=`</tbody></table></div>`;
+  document.getElementById('dashView').innerHTML=h;
+}
+
+// ═══════════════════════════════════════════════
+// DATA TABLE VIEW (all 21 columns)
+// ═══════════════════════════════════════════════
+function renderTable(rows) {
+  let h=`<div class="tbl-wrap"><table class="main-tbl"><thead><tr>`;
+  [...COLS, ...EXTRA_COLS].forEach(c=>{
+    const vis=colVis[c.key];
+    h+=`<th class="col-${c.key}${vis?'':' hidden-col'}" title="${c.full}">
+      <div class="th-inner">${c.hdr}
+        <button class="th-eye" onclick="event.stopPropagation();toggleCol('${c.key}',false);document.getElementById('ctcb_${c.key}').checked=false" title="Hide column">✕</button>
+      </div></th>`;
+  });
+  h+=`<th style="min-width:80px">Gap (mo)</th><th>Backfill By</th><th>ATAP</th><th>Status</th><th>⚑</th><th></th></tr></thead><tbody>`;
+
+  const _tblSlatMap = buildSlatNameMap();
+  rows.forEach(r=>{
+    const dep=effDep(r),req=backfillDate(r),at=atapCycle(r),gap=gapMonths(r),st=rowStatus(r),mm=mismatch(r);
+    const _dup=dupSlate(r,_tblSlatMap);
+    h+=`<tr class="${mm?'alert-row':_dup?'dup-slate-row':st==='gap'?'gap-row':''}" onclick="openDetail('${r.id}')" style="cursor:pointer">`;
+    [...COLS, ...EXTRA_COLS].forEach(c=>{
+      const vis=colVis[c.key];
+      let val=str(r[c.key]);
+      if (c.key==='grade') val=`<span style="color:var(--gold);font-family:'Oswald',sans-serif">${val||'—'}</span>`;
+      else if (c.key==='incRank'||c.key==='slatRank') val=`<span style="font-family:'Oswald',sans-serif">${val||'—'}</span>`;
+      else if (c.key==='ymav') val=`<span style="font-family:'IBM Plex Mono',sans-serif;font-size:11px;color:${mm?'var(--scarlet-lt)':'inherit'}">${val||'—'}</span>`;
+      else if (c.key==='psntl') val=`<span style="font-weight:600;color:var(--white)">${val||'—'}</span>`;
+      else if (c.key==='section') val=val?`<span style="color:var(--gold);font-weight:600">${val}</span>`:'<span style="color:var(--muted-lt)">—</span>';
+      else if (c.key==='incName'||c.key==='slatName') val=val||'<span style="color:var(--muted-lt)">—</span>';
+      else if (c.key==='sd') val=fmtDate(r.sdDate);
+      else if (c.key==='slatArrive') val=fmtDate(r.slatDate);
+      else val=val||'<span style="color:var(--muted-lt)">—</span>';
+      h+=`<td class="col-${c.key}${vis?'':' hidden-col'}">${val}</td>`;
+    });
+    h+=`<td>${gap!==null?`<span style="color:${gap>0?'var(--danger)':'var(--success)'};font-weight:700">${gap}</span>`:'—'}</td>`;
+    h+=`<td style="color:var(--warning)">${fmtDate(req)}</td>`;
+    h+=`<td>${at?`<span class="badge b-${at.toLowerCase()}">${at}</span>`:'—'}</td>`;
+    h+=`<td><span class="badge b-${st}">${st}</span></td>`;
+    h+=`<td>${mm?'<span style="color:var(--scarlet-lt)">&#9873;</span>':''}</td>`;
+    h+=`<td>${gradeMismatch(r)?'<span style="color:#f0a500;font-weight:700" title="Grade '+str(r.grade)+' / Rank '+str(r.incRank)+' mismatch">&#9873; Gr</span>':''}</td>`;
+    h+=`<td>${dupSlate(r,_tblSlatMap)?'<span style="color:#c39bd3;font-weight:700" title="'+str(r.slatName)+' is slated for multiple positions">&#9873; Dup</span>':''}</td>`;
+    h+=`<td onclick="event.stopPropagation()"><button class="btn btn-danger btn-xs" onclick="deleteRow('${r.id}')">✕</button></td>`;
+    h+=`</tr>`;
+  });
+  h+=`</tbody></table></div>`;
+  document.getElementById('tableView').innerHTML=h;
+}
+
+// ═══════════════════════════════════════════════
+// GANTT
+// ═══════════════════════════════════════════════
+function getGanttDataRange(rows) {
+  let minY = 2100, maxY = 2000;
+  let latestArrival = null;
+  rows.forEach(r => {
+    if(r.sdDate)   minY = Math.min(minY, r.sdDate.getFullYear());
+    if(r.ymavDate) maxY = Math.max(maxY, r.ymavDate.getFullYear());
+    if(r.slatDate) {
+      maxY = Math.max(maxY, r.slatDate.getFullYear());
+      if(!latestArrival || r.slatDate > latestArrival) latestArrival = r.slatDate;
+    }
+  });
+  if(minY===2100) minY = new Date().getFullYear();
+  // maxY = 3 years past the latest arrival date, or fallback
+  maxY = latestArrival ? latestArrival.getFullYear() + 3 : (maxY===2000 ? minY+5 : maxY+3);
+  return { minY, maxY };
+}
+
+function populateGanttYearSelects(rows) {
+  const { minY, maxY } = getGanttDataRange(rows);
+  const fromSel = document.getElementById('ganttYrFrom');
+  const toSel   = document.getElementById('ganttYrTo');
+  if(!fromSel||!toSel) return;
+  const curFrom = S.ganttYrFrom || minY;
+  const curTo   = S.ganttYrTo   || maxY;
+  // Build year options spanning data range ±2
+  const startY = Math.min(minY, curFrom) - 1;
+  const endY   = Math.max(maxY, curTo)   + 1;
+  let fromOpts='', toOpts='';
+  for(let y=startY; y<=endY; y++) {
+    fromOpts += `<option value="${y}" ${y===curFrom?'selected':''}>${y}</option>`;
+    toOpts   += `<option value="${y}" ${y===curTo?'selected':''}>${y}</option>`;
+  }
+  fromSel.innerHTML = fromOpts;
+  toSel.innerHTML   = toOpts;
+  // Update label
+  const lbl = document.getElementById('ganttRangeLabel');
+  if(lbl) lbl.textContent = `Showing ${curFrom}–${curTo} (${curTo-curFrom+1} years)`;
+}
+
+function applyGanttYears() {
+  const f = parseInt(document.getElementById('ganttYrFrom').value);
+  const t = parseInt(document.getElementById('ganttYrTo').value);
+  S.ganttYrFrom = Math.min(f,t);
+  S.ganttYrTo   = Math.max(f,t);
+  const lbl = document.getElementById('ganttRangeLabel');
+  if(lbl) lbl.textContent = `Showing ${S.ganttYrFrom}–${S.ganttYrTo} (${S.ganttYrTo-S.ganttYrFrom+1} years)`;
+  renderAll();
+}
+
+function resetGanttYears() {
+  S.ganttYrFrom = null;
+  S.ganttYrTo   = null;
+  renderAll();
+}
+
+function renderGantt(rows) {
+  // Determine year range
+  const { minY, maxY } = getGanttDataRange(rows);
+  const yrFrom = S.ganttYrFrom || minY;
+  const yrTo   = S.ganttYrTo   || maxY;
+
+  let minD = new Date(yrFrom, 0, 1);
+  let maxD = new Date(yrTo + 1, 0, 1);
+  const months=[]; let d=new Date(minD);
+  while(d<maxD){ months.push(new Date(d)); d.setMonth(d.getMonth()+1); }
+  const MW=26, LW=420, TW=months.length*MW;
+  function dx(date){ return Math.max(0,Math.min(TW,((date-minD)/(maxD-minD))*TW)); }
+
+  // year spans
+  const years=[];
+  months.forEach((m,i)=>{ if(m.getMonth()===0||i===0) years.push({y:m.getFullYear(),i}); });
+
+  // seasonal bands
+  let bands='';
+  months.forEach((m,i)=>{ const s=(m.getMonth()+1)>=4&&(m.getMonth()+1)<=9;
+    bands+=`<div class="sb-band ${s?'sum':'win'}" style="left:${i*MW}px;width:${MW}px"></div>`; });
+
+  let h=`<div class="gantt-wrap" style="min-width:${LW+TW}px">
+  <div class="gantt-legend">
+    <span style="font-family:'Oswald',sans-serif;font-size:9px;letter-spacing:1px;color:var(--gold);text-transform:uppercase">Legend:</span>
+    <div class="g-li"><div class="g-sw" style="background:linear-gradient(90deg,#1a4a8a,#2471a3);border:1px solid #2980b9"></div><span>Incumbent (Start→YMAV)</span></div>
+    <div class="g-li"><div class="g-sw" style="background:linear-gradient(90deg,#8a0a1e,#c8102e);border:1px solid #e8294a"></div><span>Gap (YMAV→Arrival)</span></div>
+    <div class="g-li"><div class="g-sw" style="background:linear-gradient(90deg,#512e8c,#7d3c98);border:1px solid #9b59b6"></div><span>Slated (post-arrival)</span></div>
+    <div class="g-li"><div class="g-dm" style="background:var(--kd12-col)"></div><span>12mo KD</span></div>
+    <div class="g-li"><div class="g-dm" style="background:var(--kd24-col)"></div><span>24mo KD</span></div>
+    <div class="g-li"><div style="width:18px;height:8px;background:rgba(200,16,46,.15);border:1px solid rgba(200,16,46,.3)"></div><span>Summer</span></div>
+    <div class="g-li"><div style="width:18px;height:8px;background:rgba(41,128,185,.15);border:1px solid rgba(41,128,185,.3)"></div><span>Winter</span></div>
+  </div>
+  <div>
+    <!-- year row -->
+    <div class="g-yr-hdr" style="display:flex">
+      <div style="width:${LW}px;flex-shrink:0;background:var(--navy-mid)"></div>
+      <div style="position:relative;width:${TW}px;flex-shrink:0;height:20px">`;
+  years.forEach((yr,yi)=>{
+    const nxt=yi+1<years.length?years[yi+1].i:months.length;
+    h+=`<div class="yr-cell" style="position:absolute;left:${yr.i*MW}px;width:${(nxt-yr.i)*MW}px">${yr.y}</div>`;
+  });
+  h+=`</div></div>
+    <!-- month row -->
+    <div class="g-hdr" style="display:flex">
+      <div style="width:${LW}px;flex-shrink:0;display:grid;grid-template-columns:160px 40px 50px 80px 90px;background:var(--navy-mid);border-bottom:2px solid var(--scarlet)">
+        <div style="padding:5px 8px;font-family:'Oswald',sans-serif;font-size:9px;letter-spacing:1.5px;color:var(--gold);text-transform:uppercase">Duty Title</div>
+        <div style="padding:5px 4px;font-family:'Oswald',sans-serif;font-size:9px;letter-spacing:1px;color:var(--gold);text-transform:uppercase">Gr</div>
+        <div style="padding:5px 4px;font-family:'Oswald',sans-serif;font-size:9px;letter-spacing:1px;color:var(--gold);text-transform:uppercase">Rank</div>
+        <div style="padding:5px 4px;font-family:'Oswald',sans-serif;font-size:9px;letter-spacing:1px;color:var(--gold);text-transform:uppercase">Incumbent</div>
+        <div style="padding:5px 4px;font-family:'Oswald',sans-serif;font-size:9px;letter-spacing:1px;color:var(--gold);text-transform:uppercase">Slated</div>
+      </div>
+      <div style="position:relative;width:${TW}px;flex-shrink:0;height:22px;background:var(--navy-mid);border-bottom:2px solid var(--scarlet)">`;
+  const MN=['J','F','M','A','M','J','J','A','S','O','N','D'];
+  months.forEach((m,i)=>h+=`<div class="mo-cell${m.getMonth()===0?' jan':''}" style="position:absolute;left:${i*MW}px;width:${MW}px">${MN[m.getMonth()]}</div>`);
+  h+=`</div></div>`;
+
+  rows.forEach(r=>{
+    const dep=effDep(r), st=rowStatus(r), mm2=mismatch(r), at=atapCycle(r), bfd=backfillDate(r);
+
+    // ── Key x-positions ──────────────────────────────────────────
+    // Blue bar: START DATE → YMAV (departure)
+    const blueStart = r.sdDate  ? dx(r.sdDate)   : null;
+    const blueEnd   = dep       ? dx(dep)         : null;
+
+    // Red gap bar: YMAV → Slated Arrival (only if arrival is AFTER departure)
+    const redStart  = (dep && r.slatDate && r.slatDate > dep) ? dx(dep)        : null;
+    const redEnd    = (dep && r.slatDate && r.slatDate > dep) ? dx(r.slatDate) : null;
+
+    // Slated name label (shown after arrival date)
+    const slatX     = r.slatDate ? dx(r.slatDate) : null;
+
+    // KD markers: 12 and 24 months after start date — only when KD is enabled
+    const _kdOn     = kdEnabled(r);
+    const kd12Date  = (_kdOn && r.sdDate) ? new Date(r.sdDate.getFullYear(), r.sdDate.getMonth()+12, r.sdDate.getDate()) : null;
+    const kd24Date  = (_kdOn && r.sdDate) ? new Date(r.sdDate.getFullYear(), r.sdDate.getMonth()+24, r.sdDate.getDate()) : null;
+    const kd12X     = kd12Date ? dx(kd12Date) : null;
+    const kd24X     = kd24Date ? dx(kd24Date) : null;
+
+    // Backfill request line
+    const bX        = bfd ? dx(bfd) : null;
+
+    let tl=`<div style="position:relative;width:${TW}px;height:44px">${bands}`;
+
+    // ── BLUE bar: Incumbent tenure (Start → YMAV) ────────────────
+    if(blueStart!==null && blueEnd!==null && blueEnd>blueStart){
+      const w = blueEnd - blueStart;
+      const label = w>55 ? (str(r.incName).split(',')[0]||'') : '';
+      tl+=`<div class="gantt-bar" style="left:${blueStart}px;width:${w}px;background:linear-gradient(90deg,#1a4a8a,#2471a3);border:1px solid #2980b9;color:#fff;top:8px;height:20px" title="Incumbent: ${str(r.incName)} | Start: ${fmtDate(r.sdDate)} → YMAV: ${str(r.ymav)}">${label}</div>`;
+    }
+
+    // ── RED bar: Gap period (YMAV → Slated Arrival) ──────────────
+    if(redStart!==null && redEnd!==null){
+      const w = redEnd - redStart;
+      const gm = gapMonths(r);
+      const label = w>35 ? (gm!==null ? `GAP ${gm}mo` : 'GAP') : '';
+      tl+=`<div class="gantt-bar" style="left:${redStart}px;width:${w}px;background:linear-gradient(90deg,#8a0a1e,#c8102e);border:1px solid #e8294a;color:#ffcccc;top:8px;height:20px" title="Gap: ${fmtDate(dep)} → ${fmtDate(r.slatDate)} (${gm} months)">${label}</div>`;
+    }
+
+    // ── Slated bar: arrival → arrival + tenure (default 3 yrs, per-row overridable) ──
+    if(slatX!==null && r.slatDate){
+      const slatYrs = (S.overrides[r.id]?.slatYears != null) ? parseFloat(S.overrides[r.id].slatYears) : 3;
+      const slatEnd = new Date(r.slatDate.getFullYear(), r.slatDate.getMonth() + Math.round(slatYrs * 12), 1);
+      const slatEndX = dx(slatEnd);
+      const w = Math.max(0, Math.min(TW - slatX, slatEndX - slatX));
+      if(w > 4){
+        const label = w>55 ? (str(r.slatName).split(',')[0]||'SLATED') : '';
+        tl+=`<div class="gantt-bar" style="left:${slatX}px;width:${w}px;background:linear-gradient(90deg,#512e8c,#7d3c98);border:1px solid #9b59b6;color:#dda0dd;top:8px;height:20px" title="Slated: ${str(r.slatName)} | ${fmtDate(r.slatDate)} → ${fmtDate(slatEnd)} (${slatYrs}yr)">${label}</div>`;
+      }
+    }
+
+    // ── KD 12-month diamond marker ────────────────────────────────
+    if(kd12X!==null && kd12X>0 && kd12X<TW){
+      tl+=`<div class="kd-mk k12" style="left:${kd12X}px" title="12 months in position: ${fmtDate(kd12Date)}"></div>`;
+      tl+=`<div class="kd-lbl k12" style="left:${kd12X}px">12</div>`;
+    }
+
+    // ── KD 24-month diamond marker ────────────────────────────────
+    if(kd24X!==null && kd24X>0 && kd24X<TW){
+      tl+=`<div class="kd-mk k24" style="left:${kd24X}px" title="24 months in position: ${fmtDate(kd24Date)}"></div>`;
+      tl+=`<div class="kd-lbl k24" style="left:${kd24X}px">24</div>`;
+    }
+
+    // ── Backfill request vertical line ────────────────────────────
+    if(bX!==null){
+      tl+=`<div class="atap-vl ${at==='Summer'?'sum':'win'}" style="left:${bX}px" title="Submit backfill by ${fmtDate(bfd)}"></div>`;
+      tl+=`<div class="atap-lbl ${at==='Summer'?'sum':'win'}" style="left:${bX+3}px">HRC</div>`;
+    }
+
+    // ── Mismatch dot ──────────────────────────────────────────────
+    if(mm2) tl+=`<div class="mm-dot" title="YMAV Mismatch"></div>`;
+    tl+=`</div>`;
+
+    const grMis2=gradeMismatch(r);
+    const _ganttSlatMap = buildSlatNameMap();
+    const dup2=dupSlate(r,_ganttSlatMap);
+    h+=`<div class="g-row${mm2?' alert-row':grMis2?' grade-mismatch-row':dup2?' dup-slate-row':''}" onclick="openDetail('${r.id}')">
+      <div style="width:${LW}px;flex-shrink:0;display:grid;grid-template-columns:160px 40px 50px 80px 90px;align-items:center">
+        <div style="padding:0 8px;overflow:hidden">
+          <div style="font-size:11px;font-weight:600;color:var(--white);overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${str(r.psntl)}">${str(r.psntl)||'—'}</div>
+          <div style="font-size:9px;color:var(--muted-lt)">${r.sdDate?fmtDateSh(r.sdDate):'No start date'}</div>
+        </div>
+        <div style="padding:0 4px;text-align:center;font-family:'Oswald',sans-serif;font-size:11px;color:var(--gold)">${str(r.grade)||'—'}</div>
+        <div style="padding:0 4px;font-family:'Oswald',sans-serif;font-size:11px">${str(r.incRank)||'—'}</div>
+        <div style="padding:0 4px;overflow:hidden"><div style="font-size:10px;color:var(--white);overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${str(r.incName)}">${str(r.incName)||'<span style="color:var(--warning);font-style:italic">Unfilled</span>'}</div></div>
+        <div style="padding:0 4px;overflow:hidden"><div style="font-size:10px;color:#c39bd3;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${str(r.slatName)}">${str(r.slatName)||'<span style="color:var(--muted-lt);font-style:italic">None</span>'}</div></div>
+      </div>
+      <div style="width:${TW}px;flex-shrink:0">${tl}</div>
+    </div>`;
+  });
+  h+=`</div></div>`;
+  document.getElementById('ganttView').innerHTML=h;
+  populateGanttYearSelects(rows);
+}
+
+// ═══════════════════════════════════════════════
+// DETAIL PANEL
+// ═══════════════════════════════════════════════
+function openDetail(id) {
+  const r=Object.values(S.sheets).flat().find(x=>x.id===id); if(!r) return;
+  const ov=S.overrides[id]||{};
+  const dep=effDep(r),at=atapCycle(r),req=backfillDate(r),gap=gapMonths(r),mm=mismatch(r);
+
+  let h=`<div class="dp-title">${str(r.psntl)||'Position'}</div>
+  <div class="dp-sub">${str(r.grade)||'—'} · ${str(r.posco)||'—'} · ${str(r.brnch)||'—'}</div>
+
+  <div class="dp-section">
+    <div class="dp-sec-label">MTOE / Admin</div>
+    <div class="dp-row"><span class="dp-k">UIC</span><span class="dp-v">${str(r.uic)||'—'}</span></div>
+    <div class="dp-row"><span class="dp-k">EDATE</span><span class="dp-v">${str(r.edate)||'—'}</span></div>
+    <div class="dp-row"><span class="dp-k">PARNO1</span><span class="dp-v">${str(r.parno1)||'—'}</span></div>
+    <div class="dp-row"><span class="dp-k">PARNO3</span><span class="dp-v">${str(r.parno3)||'—'}</span></div>
+    <div class="dp-row"><span class="dp-k">PERLN</span><span class="dp-v">${str(r.perln)||'—'}</span></div>
+    <div class="dp-row"><span class="dp-k">RQSTR / AUSTR</span><span class="dp-v">${str(r.rqstr)||'—'} / ${str(r.austr)||'—'}</span></div>
+  </div>
+
+  <div class="dp-section">
+    <div class="dp-sec-label">Incumbent</div>
+    <div class="dp-row"><span class="dp-k">Section</span><span class="dp-v" style="color:var(--gold);font-weight:600">${str(r.section)||'—'}</span></div>
+    <div class="dp-row"><span class="dp-k">Name</span><span class="dp-v">${str(r.incName)||'—'}</span></div>
+    <div class="dp-row"><span class="dp-k">Rank</span><span class="dp-v">${str(r.incRank)||'—'} <span style="font-family:'IBM Plex Mono',sans-serif;font-size:9px;color:var(--muted-lt)">[raw: "${str(r.incRank)}"]</span></span></div>
+    <div class="dp-row"><span class="dp-k">MTOE Grade</span><span class="dp-v">${str(r.grade)||'—'} <span style="font-family:'IBM Plex Mono',sans-serif;font-size:9px;color:var(--muted-lt)">[raw: "${str(r.grade)}"]</span></span></div>
+    <div class="dp-row"><span class="dp-k">AOC/MOS</span><span class="dp-v">${str(r.incMOS)||'—'}</span></div>
+    <div class="dp-row"><span class="dp-k">Start Date</span><span class="dp-v">${fmtDate(r.sdDate)}</span></div>
+    <div class="dp-row"><span class="dp-k">Time in Position</span><span class="dp-v">${str(r.tip)||'—'}</span></div>
+    <div class="dp-row"><span class="dp-k">YMAV</span><span class="dp-v ${mm?'alert':''}">${str(r.ymav)||'—'}</span></div>
+  </div>
+
+  <div class="dp-section">
+    <div class="dp-sec-label">Replacement</div>
+    <div class="dp-row"><span class="dp-k">Name</span><span class="dp-v">${str(r.slatName)||'—'}</span></div>
+    <div class="dp-row"><span class="dp-k">Rank</span><span class="dp-v">${str(r.slatRank)||'—'}</span></div>
+    <div class="dp-row"><span class="dp-k">MOS</span><span class="dp-v">${str(r.slatMOS)||'—'}</span></div>
+    <div class="dp-row"><span class="dp-k">Arrival Date</span><span class="dp-v">${fmtDate(r.slatDate)}</span></div>
+  </div>
+  ${EXTRA_COLS.length ? `<div class="dp-section">
+    <div class="dp-sec-label">Custom Columns</div>
+    ${EXTRA_COLS.map(c=>`<div class="dp-row"><span class="dp-k">${c.hdr}</span><span class="dp-v">${str(r[c.key])||'—'}</span></div>`).join('')}
+  </div>` : ''}
+
+  <div class="dp-section">
+    <div class="dp-sec-label">ATAP & Gap Analysis</div>
+    <div class="dp-row"><span class="dp-k">YMAV (raw)</span><span class="dp-v" style="font-family:'IBM Plex Mono',sans-serif;font-size:10px">${str(r.ymav)||'—'}</span></div>
+    <div class="dp-row"><span class="dp-k">YMAV (parsed)</span><span class="dp-v" style="color:${r.ymavDate?'var(--success)':'var(--danger)'}">${r.ymavDate?fmtDate(r.ymavDate):'⚑ not parsed'}</span></div>
+    <div class="dp-row"><span class="dp-k">Arrival (raw)</span><span class="dp-v" style="font-family:'IBM Plex Mono',sans-serif;font-size:10px">${normalizeYmav(r.slatArrive)||str(r.slatArrive)||'—'}</span></div>
+    <div class="dp-row"><span class="dp-k">Arrival (parsed)</span><span class="dp-v" style="color:${r.slatDate?'var(--success)':'var(--danger)'}">${r.slatDate?fmtDate(r.slatDate):'⚑ not parsed'}</span></div>
+    <div class="dp-row"><span class="dp-k">Eff. Departure</span><span class="dp-v ${mm?'alert':''}">${fmtDate(dep)}</span></div>
+    <div class="dp-row"><span class="dp-k">Gap Duration</span><span class="dp-v" style="color:${gap&&gap>0?'var(--danger)':'var(--success)'}">${gap!==null?gap+' mo':'—'}</span></div>
+    <div class="dp-row"><span class="dp-k">ATAP Cycle</span><span class="dp-v">${at||'—'}</span></div>
+    <div class="dp-row"><span class="dp-k">Backfill Request By</span><span class="dp-v" style="color:var(--warning)">${fmtDate(req)}</span></div>
+  </div>
+
+  ${mm?`<div class="alert-box">⚑ YMAV Mismatch — Projected departure (${fmtDate(dep)}) does not match YMAV (${fmtDate(r.ymavDate)}). Officer should update their YMAV.</div>`:''}
+
+  ${(()=>{
+    const gm = gradeMismatch(r);
+    const acked = S.overrides[r.id] && S.overrides[r.id].gradeRankAck;
+    const expected = GRADE_RANK_MAP[str(r.grade).toUpperCase()];
+    if(gm) return `<div class="alert-box" style="border-color:rgba(230,126,18,.5);background:rgba(230,126,18,.1);color:#f0a500;margin-top:8px">
+      &#9873; Grade/Rank Mismatch — MTOE Grade is <strong>${str(r.grade)}</strong> but incumbent rank is <strong>${str(r.incRank)}</strong>.
+      ${expected ? ' Expected: <strong>'+expected.join(' or ')+'</strong>.' : ''}
+      <div style="margin-top:8px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+        <button class="btn btn-secondary btn-sm" onclick="saveOv('${id}','gradeRankAck',true)">&#10003; Acknowledge &amp; Suppress</button>
+        <span style="font-size:10px;color:var(--muted-lt)">e.g. CPT/P filling MAJ billet</span>
+      </div>
+    </div>`;
+    if(acked && str(r.grade) && str(r.incRank)) return `<div style="background:rgba(39,174,96,.08);border:1px solid rgba(39,174,96,.2);border-radius:4px;padding:7px 11px;font-size:11px;color:#27ae60;margin-top:6px;display:flex;justify-content:space-between;align-items:center">
+      &#10003; Grade/Rank mismatch acknowledged (${str(r.grade)} / ${str(r.incRank)})
+      <button class="btn btn-secondary btn-xs" onclick="saveOv('${id}','gradeRankAck',null)">Reopen</button>
+    </div>`;
+    return '';
+  })()}
+
+  <div class="dp-section">
+    <div class="dp-sec-label">Manual Overrides</div>
+    <div class="dp-input-g"><label>Projected Departure (override)</label>
+      <input class="dp-input" type="date" value="${ov.depDate||''}" onchange="saveOv('${id}','depDate',this.value)"/></div>
+    <div class="dp-input-g" style="margin-top:6px"><label>ATAP Cycle Override</label>
+      <select class="dp-input dp-select" onchange="saveOv('${id}','atapOv',this.value)">
+        <option value="">— Auto-detect —</option>
+        <option value="Summer" ${ov.atapOv==='Summer'?'selected':''}>Summer</option>
+        <option value="Winter" ${ov.atapOv==='Winter'?'selected':''}>Winter</option>
+      </select></div>
+    <div class="dp-input-g" style="margin-top:6px">
+      <label>Slated Tenure on Gantt (years) <span style="color:var(--gold);font-size:9px">default: 3</span></label>
+      <div style="display:flex;align-items:center;gap:8px">
+        <input class="dp-input" type="number" min="0.5" max="10" step="0.5"
+          value="${ov.slatYears!=null?ov.slatYears:3}"
+          onchange="saveOv('${id}','slatYears',parseFloat(this.value)||3)"
+          style="width:80px"/>
+        <button onclick="saveOv('${id}','slatYears',null)" class="btn btn-secondary btn-xs">Reset</button>
+        <span style="font-size:10px;color:var(--muted-lt)" id="slatDurLbl_${id}"></span>
+      </div>
+    </div>
+    <div class="dp-input-g" style="margin-top:6px"><label>Notes</label>
+      <input class="dp-input" type="text" placeholder="Add notes…" value="${ov.notes||''}" onchange="saveOv('${id}','notes',this.value)"/></div>
+  </div>`;
+
+  document.getElementById('detailContent').innerHTML=h;
+  document.getElementById('detailPanel').classList.add('open');
+}
+function saveOv(id,k,v){ if(!S.overrides[id])S.overrides[id]={};if(v===null)delete S.overrides[id][k];else S.overrides[id][k]=v;renderAll();setTimeout(()=>openDetail(id),50);}
+function closeDetail(){ document.getElementById('detailPanel').classList.remove('open'); }
+
+// ═══════════════════════════════════════════════
+// ADD ROW
+// ═══════════════════════════════════════════════
+function openAddRow() {
+  const form=document.getElementById('addRowForm');
+  form.innerHTML=COLS.map((c,i)=>{
+    const isDivider = i===12; // before incumbent section (Section col at 11)
+    return `${isDivider?'<div class="form-divider">Incumbent</div>':''}
+    ${i===17?'<div class="form-divider">Replacement</div>':''}
+    <div class="form-group">
+      <label>${c.hdr}<span style="font-size:9px;color:var(--muted-lt);margin-left:4px">${c.full}</span></label>
+      <input type="${c.key==='sd'||c.key==='slatArrive'||c.key==='edate'?'date':'text'}" id="nrf_${c.key}" placeholder="${c.ex}"/>
+    </div>`;
+  }).join('');
+  document.getElementById('addRowModal').classList.add('open');
+}
+// ═══════════════════════════════════════════════
+// MASS UPDATE
+// ═══════════════════════════════════════════════
+let muSelected = new Set();
+
+function openMassUpdate() {
+  muSelected = new Set();
+  document.getElementById('muField').value = '';
+  document.getElementById('muValue').value = '';
+  document.getElementById('muSearch').value = '';
+  muRenderList();
+  document.getElementById('massUpdateModal').classList.add('open');
+}
+function closeMassUpdate() { document.getElementById('massUpdateModal').classList.remove('open'); }
+
+function muFieldChanged() {
+  // Auto-populate value field with a hint based on field
+  const hints = { section:'e.g. S1', brnch:'e.g. AV', grade:'e.g. O4', posco:'e.g. 15C00' };
+  const f = document.getElementById('muField').value;
+  document.getElementById('muValue').placeholder = hints[f] || 'New value…';
+}
+
+function muRenderList() {
+  const q = (document.getElementById('muSearch').value||'').toLowerCase();
+  const rows = filtered();
+  const shown = q ? rows.filter(r =>
+    str(r.psntl).toLowerCase().includes(q) ||
+    str(r.incName).toLowerCase().includes(q) ||
+    str(r.section).toLowerCase().includes(q) ||
+    str(r.grade).toLowerCase().includes(q)
+  ) : rows;
+
+  let h = '';
+  shown.forEach(r => {
+    const chk = muSelected.has(r.id);
+    const sec = str(r.section) ? `<span style="color:var(--gold);margin-left:6px">${str(r.section)}</span>` : '';
+    const grade = str(r.grade) ? `<span style="color:var(--muted-lt);margin-left:6px;font-size:10px">${str(r.grade)}</span>` : '';
+    h += `<label style="display:flex;align-items:center;gap:8px;padding:7px 10px;border-bottom:1px solid rgba(255,255,255,.04);cursor:pointer;${chk?'background:rgba(200,16,46,.08)':''}">
+      <input type="checkbox" style="accent-color:var(--scarlet)" ${chk?'checked':''} onchange="muToggle('${r.id}',this.checked)"/>
+      <span style="flex:1;font-size:12px;color:var(--white)">${str(r.psntl)||'—'}${grade}${sec}</span>
+      <span style="font-size:11px;color:var(--muted-lt)">${str(r.incName)||'Unfilled'}</span>
+    </label>`;
+  });
+  if (!shown.length) h = '<div style="padding:14px;color:var(--muted-lt);font-size:12px;text-align:center">No rows match filter</div>';
+  document.getElementById('muList').innerHTML = h;
+  muUpdateSummary();
+}
+
+function muToggle(id, checked) {
+  if (checked) muSelected.add(id); else muSelected.delete(id);
+  muUpdateSummary();
+  // re-render to update highlight without full list rebuild
+  muRenderList();
+}
+
+function muSelectAll() {
+  filtered().forEach(r => muSelected.add(r.id));
+  muRenderList();
+}
+function muSelectNone() {
+  muSelected.clear();
+  muRenderList();
+}
+function muUpdateSummary() {
+  const el = document.getElementById('muSummary');
+  if (!el) return;
+  el.textContent = muSelected.size ? `${muSelected.size} row${muSelected.size>1?'s':''} selected` : '';
+}
+
+function confirmMassUpdate() {
+  const field = document.getElementById('muField').value;
+  const value = document.getElementById('muValue').value.trim();
+  if (!field) { toast('Select a field to update.', 'err'); return; }
+  if (!muSelected.size) { toast('No rows selected.', 'err'); return; }
+
+  let count = 0;
+  Object.values(S.sheets).forEach(rows => {
+    rows.forEach(r => {
+      if (!muSelected.has(r.id)) return;
+      r[field] = value;
+      count++;
+    });
+  });
+
+  closeMassUpdate();
+  renderAll();
+  toast(`Updated "${field}" to "${value||'(blank)'}" on ${count} row${count>1?'s':''}.`);
+}
+
+function closeAddRow(){ document.getElementById('addRowModal').classList.remove('open'); }
+function saveNewRow() {
+  const r={ id:'r'+(S.nextId++), _manual:true };
+  COLS.forEach(c=>{ const el=document.getElementById('nrf_'+c.key); r[c.key]=el?el.value.trim():''; });
+  r.sdDate=parseDate(r.sd);
+  r.ymavDate=ymavToDate(r.ymav);
+  r.slatDate=parseDate(r.slatArrive);
+  r.slatName=r.slatName||'';
+  r.slatRank=r.slatRank||'';
+  r.slatMOS=r.slatMOS||'';
+  if(!S.sheets[S.activeSheet]) S.sheets[S.activeSheet]=[];
+  S.sheets[S.activeSheet].push(r);
+  closeAddRow();
+  renderAll();
+  toast('Position added successfully.');
+}
+function deleteRow(id) {
+  if(!confirm('Delete this position?')) return;
+  Object.keys(S.sheets).forEach(s=>{ S.sheets[s]=S.sheets[s].filter(r=>r.id!==id); });
+  renderAll();
+  toast('Position deleted.','wrn');
+}
+
+// ═══════════════════════════════════════════════
+// IMPORT
+// ═══════════════════════════════════════════════
+
+// Which columns are selected for overwrite (keys from COLS)
+let impColSel = new Set(); // starts empty — none pre-checked
+
+function openImportModal() {
+  document.getElementById('importModal').classList.add('open');
+  document.getElementById('impStep1').style.display='block';
+  document.getElementById('impStep2').style.display='none';
+  document.getElementById('impConfirmBtn').style.display='none';
+  document.getElementById('impPreview').innerHTML='';
+  S.impData=[];
+  impColSel = new Set(); // none checked by default
+  buildImpColChecks();
+}
+
+function buildImpColChecks() {
+  const el = document.getElementById('impColChecks');
+  el.innerHTML = COLS.map(c => `
+    <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:11px;color:var(--muted-lt);padding:3px 0">
+      <input type="checkbox" class="col-toggle-cb" id="icc_${c.key}"
+        ${impColSel.has(c.key)?'checked':''}
+        onchange="toggleImpCol('${c.key}',this.checked)" style="accent-color:var(--scarlet)"/>
+      <span><strong style="color:var(--white)">${c.hdr}</strong> — ${c.full}</span>
+    </label>`).join('');
+}
+
+function toggleImpCol(key, checked) {
+  checked ? impColSel.add(key) : impColSel.delete(key);
+}
+function setAllImpCols(checked) {
+  COLS.forEach(c => {
+    checked ? impColSel.add(c.key) : impColSel.delete(c.key);
+    const el = document.getElementById('icc_'+c.key);
+    if(el) el.checked = checked;
+  });
+}
+
+function closeImportModal(){
+  document.getElementById('importModal').classList.remove('open');
+  document.getElementById('impPreview').innerHTML='';
+  document.getElementById('impConfirmBtn').style.display='none';
+  S.impData=[]; S.impSel=new Set();
+}
+
+function loadImportFile(ev) {
+  const file = (ev && ev.target && ev.target.files) ? ev.target.files[0] : ev;
+  if(!file){ toast('No file received.','err'); return; }
+  document.getElementById('impPreview').innerHTML='<div style="color:var(--muted-lt);padding:16px;text-align:center">⏳ Reading file...</div>';
+  const reader = new FileReader();
+  reader.onerror = () => toast('Could not read file.','err');
+  reader.onload = e => {
+    try {
+      const wb = XLSX.read(e.target.result,{type:'array',raw:true});
+      if(!wb||!wb.SheetNames.length){ toast('No sheets found.','err'); return; }
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const raw = XLSX.utils.sheet_to_json(ws,{header:1,defval:null,raw:true});
+      if(!raw||raw.length<2){ toast('File appears empty.','err'); document.getElementById('impPreview').innerHTML=''; return; }
+      // Find header row — matches our 21-col format
+      let hdrIdx=0;
+      for(let i=0;i<Math.min(5,raw.length);i++){
+        const r=raw[i].map(c=>(c||'').toString().toLowerCase());
+        if(r.includes('psntl')||r.includes('ymav')||r.includes('name')){ hdrIdx=i; break; }
+      }
+      const headers = raw[hdrIdx].map(c=>(c||'').toString().trim());
+      S.impData=[];
+      for(let i=hdrIdx+1;i<raw.length;i++){
+        if(!raw[i]||raw[i].every(c=>!c)) continue;
+        S.impData.push(mapRow(raw[i], headers));
+      }
+      if(!S.impData.length){ toast('No data rows found.','wrn'); document.getElementById('impPreview').innerHTML=''; return; }
+      S.impSel = new Set(S.impData.map((_,i)=>i));
+      document.getElementById('impStep2').style.display='block';
+      renderImpPreview();
+      document.getElementById('impConfirmBtn').style.display='block';
+      toast(`${S.impData.length} record(s) loaded. Select columns to update, then Apply.`);
+    } catch(err){ console.error(err); toast('Parse error: '+err.message,'err'); document.getElementById('impPreview').innerHTML=''; }
+  };
+  reader.readAsArrayBuffer(file);
+  if(ev && ev.target && ev.target.value !== undefined) ev.target.value='';
+}
+
+function renderImpPreview() {
+  const all = Object.values(S.sheets).flat();
+  // Classify each row: matched, unmatched
+  const classified = S.impData.map((r,i) => {
+    const inName = str(r.incName).trim();
+    const match = inName ? all.find(ex => str(ex.incName).trim() === inName) : null;
+    return { r, i, match, inName };
+  });
+  const unmatched = classified.filter(x => !x.match);
+
+  let h = '';
+  if(unmatched.length) {
+    h += `<div style="background:rgba(231,76,60,.1);border:1px solid rgba(231,76,60,.3);border-radius:4px;padding:10px 12px;margin-bottom:12px;font-size:11px">
+      <strong style="color:var(--scarlet-lt)">⚑ ${unmatched.length} unmatched record(s)</strong> — name not found in app.
+      <div style="margin-top:6px;display:flex;flex-wrap:wrap;gap:6px">
+        ${unmatched.map(x=>`
+          <span style="background:var(--navy);border:1px solid var(--navy-border);border-radius:3px;padding:3px 8px;font-size:10px;color:var(--white)">${x.inName||'(blank)'}
+            <button onclick="addUnmatched(${x.i})" style="background:var(--success);border:none;color:#fff;font-size:9px;padding:1px 5px;border-radius:2px;cursor:pointer;margin-left:4px">+ Add</button>
+            <button onclick="skipUnmatched(${x.i})" style="background:var(--navy-light);border:none;color:var(--muted-lt);font-size:9px;padding:1px 5px;border-radius:2px;cursor:pointer;margin-left:2px">Skip</button>
+          </span>`).join('')}
+      </div>
+    </div>`;
+  }
+
+  h += `<div style="font-size:10px;color:var(--muted-lt);margin-bottom:6px">${classified.filter(x=>x.match).length} matched · ${unmatched.length} unmatched · <span style="color:var(--gold)">${impColSel.size} column(s) selected for update</span></div>`;
+
+  h += `<table class="imp-tbl"><thead><tr>
+    <th style="width:28px"><input type="checkbox" checked onchange="toggleAllImpRows(this)" title="Toggle all"/></th>
+    <th>Name (match key)</th><th>Grade</th><th>Duty Title</th><th>YMAV</th><th>Match</th>
+  </tr></thead><tbody>`;
+
+  classified.forEach(({r,i,match,inName}) => {
+    if(!S.impSel.has(i) && match) return; // skip already-skipped unmatched
+    const skipped = !S.impSel.has(i);
+    h += `<tr style="${skipped?'opacity:.4':''}">
+      <td><input type="checkbox" ${S.impSel.has(i)?'checked':''} onchange="toggleImpRow(${i},this.checked)"/></td>
+      <td style="color:var(--white);font-weight:600">${inName||'—'}</td>
+      <td style="color:var(--gold)">${str(r.grade)||'—'}</td>
+      <td>${str(r.psntl)||'—'}</td>
+      <td style="font-family:'IBM Plex Mono',sans-serif;font-size:11px;color:var(--gold)">${str(r.ymav)||'—'}</td>
+      <td>${match
+        ? `<span style="color:var(--success);font-size:10px">✓ matched</span>`
+        : `<span style="color:var(--scarlet-lt);font-size:10px">⚑ no match</span>`}</td>
+    </tr>`;
+  });
+  h += `</tbody></table>`;
+  document.getElementById('impPreview').innerHTML = h;
+}
+
+function toggleAllImpRows(cb){ if(cb.checked) S.impData.forEach((_,i)=>S.impSel.add(i)); else S.impSel.clear(); renderImpPreview(); }
+function toggleImpRow(i,c){ c?S.impSel.add(i):S.impSel.delete(i); }
+function addUnmatched(i){ S.impSel.add(i); const r=S.impData[i]; r.id='r'+(S.nextId++); if(!S.sheets[S.activeSheet])S.sheets[S.activeSheet]=[]; S.sheets[S.activeSheet].push(r); renderImpPreview(); toast(`${str(r.incName)||'Record'} added as new position.`); }
+function skipUnmatched(i){ S.impSel.delete(i); renderImpPreview(); }
+
+function confirmImport() {
+  if(impColSel.size === 0){ toast('Please select at least one column to update.','wrn'); return; }
+  const all = Object.values(S.sheets).flat();
+  let updated = 0, skipped = 0;
+
+  S.impData.forEach((incoming, i) => {
+    if(!S.impSel.has(i)) return;
+    const inName = str(incoming.incName).trim();
+    const existing = inName ? all.find(ex => str(ex.incName).trim() === inName) : null;
+    if(!existing){ skipped++; return; }
+
+    // Only overwrite the selected columns — blank cells ARE applied
+    impColSel.forEach(key => {
+      existing[key] = incoming[key] != null ? incoming[key] : '';
+    });
+    existing.sdDate   = parseDate(existing.sd);
+    existing.ymavDate = ymavToDate(existing.ymav);
+    existing.slatDate = parseDate(existing.slatArrive);
+    updated++;
+  });
+
+  closeImportModal();
+  renderAll();
+  const colList = [...impColSel].join(', ');
+  toast('Import complete — ' + updated + ' record(s) updated' + (skipped?' · '+skipped+' skipped (no name match)':'') + (colList?' | Cols: '+colList:''), updated>0?'':'wrn');
+}
+
+// ═══════════════════════════════════════════════
+// EXPORT
+// ═══════════════════════════════════════════════
+function exportExcel() {
+  const wb=XLSX.utils.book_new();
+  Object.keys(S.sheets).forEach(sname=>{
+    const headers=[...COLS.map(c=>c.hdr),...EXTRA_COLS.map(c=>c.hdr),'GAP (MONTHS)','BACKFILL REQUEST BY','ATAP CYCLE','STATUS','NOTES'];
+    const dataRows=S.sheets[sname].map(r=>{
+      const ov=S.overrides[r.id]||{};
+      return [
+        ...COLS.map(c=>{
+          if(c.key==='sd') return r.sdDate?fmtDate(r.sdDate):str(r.sd);
+          if(c.key==='slatArrive') return r.slatDate?fmtDate(r.slatDate):str(r.slatArrive);
+          return str(r[c.key]);
+        }),
+        ...EXTRA_COLS.map(c=>str(r[c.key])),
+        gapMonths(r)??'',
+        backfillDate(r)?fmtDate(backfillDate(r)):'',
+        atapCycle(r)||'',
+        rowStatus(r),
+        ov.notes||''
+      ];
+    });
+    const ws=XLSX.utils.aoa_to_sheet([headers,...dataRows]);
+    ws['!cols']=headers.map(h=>({wch:Math.max(String(h).length+2,14)}));
+    XLSX.utils.book_append_sheet(wb,ws,sname.substring(0,31));
+  });
+  XLSX.writeFile(wb,'Succession_Plan_Export.xlsx');
+  toast('Excel exported.');
+}
+
+// ═══════════════════════════════════════════════
+// EXPORT GANTT TO EXCEL
+// ═══════════════════════════════════════════════
+function exportGanttExcel() {
+  const rows = filtered();
+  if (!rows.length) { toast('No rows to export.','err'); return; }
+
+  // ── Year/month range from Gantt settings ──
+  const { minY, maxY } = getGanttDataRange(rows);
+  const yrFrom = S.ganttYrFrom || minY;
+  const yrTo   = S.ganttYrTo   || maxY;
+
+  // Build list of months: [{year, month (1-12)}]
+  const months = [];
+  for (let y = yrFrom; y <= yrTo; y++) {
+    for (let m = 1; m <= 12; m++) {
+      months.push({ y, m });
+    }
+  }
+
+  const MON = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const FIXED_COLS = ['Section','Duty Title','Grade','Rank','Incumbent','YMAV','Slated','Arrival','Gap','ATAP','Status'];
+  const FC = FIXED_COLS.length;
+
+  // ── Style helpers ──
+  const S_NAVY   = { patternType:'solid', fgColor:{ rgb:'0A1628' } };
+  const S_HEADER = { patternType:'solid', fgColor:{ rgb:'0E1E35' } };
+  const S_YRBAND = { patternType:'solid', fgColor:{ rgb:'112240' } };
+
+  // Summer = Apr-Sep (orange tint), Winter = Oct-Mar (blue tint)
+  const summerBg = { patternType:'solid', fgColor:{ rgb:'2A1A0A' } };
+  const winterBg = { patternType:'solid', fgColor:{ rgb:'0A1A2A' } };
+
+  // Bar colors
+  const C_INCUMBENT = { rgb:'1A4A8A' }; // blue
+  const C_GAP       = { rgb:'8A1A1A' }; // red
+  const C_SLATED    = { rgb:'4A1A7A' }; // purple
+  const C_KD12      = { rgb:'B8860B' }; // dark gold — KD 12
+  const C_KD24      = { rgb:'8B4513' }; // saddle brown — KD 24
+  const C_BACKFILL  = { rgb:'1A5A1A' }; // green — backfill line
+
+  const boldWhite  = { bold:true,  color:{ rgb:'EEF2F7' }, name:'Calibri', sz:9 };
+  const normWhite  = { bold:false, color:{ rgb:'EEF2F7' }, name:'Calibri', sz:8 };
+  const normMuted  = { bold:false, color:{ rgb:'6B809A' }, name:'Calibri', sz:8 };
+  const normGold   = { bold:true,  color:{ rgb:'C9A84C' }, name:'Calibri', sz:8 };
+  const normSmall  = { bold:false, color:{ rgb:'EEF2F7' }, name:'Calibri', sz:7 };
+
+  function cell(v, font, fill, align, border) {
+    const c = { v: v ?? '', t: typeof v === 'number' ? 'n' : 's' };
+    const s = {};
+    if (font)  s.font  = font;
+    if (fill)  s.fill  = { ...fill };
+    if (align) s.alignment = align;
+    if (border) s.border = border;
+    if (Object.keys(s).length) c.s = s;
+    return c;
+  }
+
+  const aoa = []; // rows of cell arrays
+  const merges = [];
+
+  // ── Row 0: Year header band ──
+  const r0 = [];
+  FIXED_COLS.forEach(() => r0.push(cell('', boldWhite, S_HEADER)));
+  let col = FC;
+  for (let y = yrFrom; y <= yrTo; y++) {
+    merges.push({ s:{ r:0, c:col }, e:{ r:0, c:col+11 } });
+    r0.push(cell(String(y), { bold:true, color:{ rgb:'C9A84C' }, name:'Calibri', sz:10 },
+      S_YRBAND, { horizontal:'center', vertical:'center' }));
+    for (let i=1; i<12; i++) r0.push(cell('', boldWhite, S_YRBAND));
+    col += 12;
+  }
+  aoa.push(r0);
+
+  // ── Row 1: Month headers ──
+  const r1 = [];
+  FIXED_COLS.forEach((h,i) => r1.push(cell(h, boldWhite, S_HEADER,
+    { horizontal: i<2?'left':'center', vertical:'center' })));
+  months.forEach(({ y, m }) => {
+    const isSummer = m >= 4 && m <= 9;
+    const bg = isSummer ? summerBg : winterBg;
+    const color = isSummer ? { rgb:'FF9988' } : { rgb:'88BBFF' };
+    r1.push(cell(MON[m-1], { bold:true, color, name:'Calibri', sz:8 }, bg,
+      { horizontal:'center', vertical:'center' }));
+  });
+  aoa.push(r1);
+
+  // ── Data rows ──
+  rows.forEach(r => {
+    const dep     = effDep(r);
+    const at      = atapCycle(r);
+    const gap     = gapMonths(r);
+    const st      = rowStatus(r);
+    const kd12    = r.sdDate ? new Date(r.sdDate.getFullYear(), r.sdDate.getMonth()+12, 1) : null;
+    const kd24    = r.sdDate ? new Date(r.sdDate.getFullYear(), r.sdDate.getMonth()+24, 1) : null;
+    const bfDate  = backfillDate(r);
+    const slatEnd = r.slatDate ? new Date(r.slatDate.getFullYear(), r.slatDate.getMonth() + Math.round(((S.overrides[r.id]?.slatYears ?? 3)*12)), 1) : null;
+
+    // ── Fixed info cells ──
+    const stColor = st==='gap' ? { rgb:'FF7777' } : st==='covered' ? { rgb:'77CC77' } : { rgb:'FFAA55' };
+    const atColor = at==='Summer' ? { rgb:'FF9966' } : { rgb:'88BBFF' };
+
+    const fixedCells = [
+      cell(str(r.section)||'',  normGold,  S_NAVY, { horizontal:'left',   vertical:'center' }),
+      cell(str(r.psntl)||'',    { bold:true, color:{ rgb:'EEF2F7' }, name:'Calibri', sz:9 }, S_NAVY, { horizontal:'left', vertical:'center' }),
+      cell(str(r.grade)||'',    normGold,  S_NAVY, { horizontal:'center', vertical:'center' }),
+      cell(str(r.incRank)||'',  normWhite, S_NAVY, { horizontal:'center', vertical:'center' }),
+      cell(str(r.incName)||'',  normWhite, S_NAVY, { horizontal:'left',   vertical:'center' }),
+      cell(str(r.ymav)||'',     normSmall, S_NAVY, { horizontal:'center', vertical:'center' }),
+      cell(str(r.slatName)||'', normMuted, S_NAVY, { horizontal:'left',   vertical:'center' }),
+      cell(r.slatDate ? fmtDate(r.slatDate) : '', normMuted, S_NAVY, { horizontal:'center', vertical:'center' }),
+      cell(gap!=null ? gap+' mo' : '', gap&&gap>0 ? { bold:true, color:{ rgb:'FF7777' }, name:'Calibri', sz:8 } : normMuted, S_NAVY, { horizontal:'center', vertical:'center' }),
+      cell(at||'', { bold:false, color:atColor, name:'Calibri', sz:8 }, S_NAVY, { horizontal:'center', vertical:'center' }),
+      cell(st||'', { bold:true,  color:stColor, name:'Calibri', sz:8 }, S_NAVY, { horizontal:'center', vertical:'center' }),
+    ];
+
+    // ── Timeline cells ──
+    const timeline = months.map(({ y, m }) => {
+      const cellDate = new Date(y, m-1, 1);
+      const cellEnd  = new Date(y, m,   1);
+      const isSummer = m >= 4 && m <= 9;
+      const seasonBg = isSummer ? summerBg : winterBg;
+
+      // Determine what this cell is
+      const inIncumbent = r.sdDate && dep   && cellDate >= new Date(r.sdDate.getFullYear(), r.sdDate.getMonth(), 1) && cellDate < dep;
+      const inGap       = dep && r.slatDate && cellDate >= dep && cellDate < r.slatDate;
+      const inSlated    = r.slatDate && slatEnd && cellDate >= r.slatDate && cellDate < slatEnd;
+      const isKD12      = kd12   && cellDate.getFullYear()===kd12.getFullYear()   && cellDate.getMonth()===kd12.getMonth();
+      const isKD24      = kd24   && cellDate.getFullYear()===kd24.getFullYear()   && cellDate.getMonth()===kd24.getMonth();
+      const isBF        = bfDate && cellDate.getFullYear()===bfDate.getFullYear() && cellDate.getMonth()===bfDate.getMonth();
+
+      // KD markers take priority label, show as number
+      if (isKD12 && inIncumbent) {
+        return cell('12', { bold:true, color:{ rgb:'000000' }, name:'Calibri', sz:8 },
+          { patternType:'solid', fgColor: C_KD12 }, { horizontal:'center', vertical:'center' });
+      }
+      if (isKD24 && inIncumbent) {
+        return cell('24', { bold:true, color:{ rgb:'FFFFFF' }, name:'Calibri', sz:8 },
+          { patternType:'solid', fgColor: C_KD24 }, { horizontal:'center', vertical:'center' });
+      }
+      if (isBF && !inIncumbent) {
+        return cell('BF', { bold:true, color:{ rgb:'FFFFFF' }, name:'Calibri', sz:7 },
+          { patternType:'solid', fgColor: C_BACKFILL }, { horizontal:'center', vertical:'center' });
+      }
+      if (inIncumbent) {
+        return cell('', normWhite, { patternType:'solid', fgColor: C_INCUMBENT },
+          { horizontal:'center', vertical:'center' });
+      }
+      if (inGap) {
+        return cell('', normWhite, { patternType:'solid', fgColor: C_GAP },
+          { horizontal:'center', vertical:'center' });
+      }
+      if (inSlated) {
+        return cell('', normWhite, { patternType:'solid', fgColor: C_SLATED },
+          { horizontal:'center', vertical:'center' });
+      }
+      // Empty cell with season tint
+      return cell('', normMuted, seasonBg, { horizontal:'center', vertical:'center' });
+    });
+
+    aoa.push([...fixedCells, ...timeline]);
+  });
+
+  // ── Legend row ──
+  const legRow = [];
+  FIXED_COLS.forEach(() => legRow.push(cell('', normMuted, S_HEADER)));
+  legRow[0] = cell('LEGEND:', normGold, S_HEADER, { horizontal:'left' });
+  legRow[1] = cell('█ Incumbent', { bold:false, color:{ rgb:'5599DD' }, name:'Calibri', sz:8 }, S_HEADER);
+  legRow[2] = cell('█ Gap', { bold:false, color:{ rgb:'DD5555' }, name:'Calibri', sz:8 }, S_HEADER);
+  legRow[3] = cell('█ Slated', { bold:false, color:{ rgb:'9966CC' }, name:'Calibri', sz:8 }, S_HEADER);
+  legRow[4] = cell('12/24 = KD Months', { bold:false, color:{ rgb:'C9A84C' }, name:'Calibri', sz:8 }, S_HEADER);
+  legRow[5] = cell('BF = Backfill Request', { bold:false, color:{ rgb:'77CC77' }, name:'Calibri', sz:8 }, S_HEADER);
+  months.forEach(() => legRow.push(cell('', normMuted, S_HEADER)));
+  aoa.push(legRow);
+
+  // ── Build worksheet ──
+  const ws = {};
+  aoa.forEach((row, ri) => {
+    row.forEach((c, ci) => {
+      const addr = XLSX.utils.encode_cell({ r: ri, c: ci });
+      ws[addr] = c;
+    });
+  });
+  ws['!ref'] = XLSX.utils.encode_range({ s:{ r:0, c:0 }, e:{ r:aoa.length-1, c:FC+months.length-1 } });
+  ws['!merges'] = merges;
+  ws['!rows'] = [{ hpt:18 }, { hpt:14 }, ...rows.map(()=>({ hpt:16 })), { hpt:14 }];
+  ws['!cols'] = [
+    { wch:10 }, // Section
+    { wch:22 }, // Duty Title
+    { wch:6  }, // Grade
+    { wch:6  }, // Rank
+    { wch:22 }, // Incumbent
+    { wch:7  }, // YMAV
+    { wch:18 }, // Slated
+    { wch:9  }, // Arrival
+    { wch:6  }, // Gap
+    { wch:8  }, // ATAP
+    { wch:8  }, // Status
+    ...months.map(()=>({ wch:4 })),
+  ];
+
+  // ── Use XLSXStyle if available, else fall back to plain XLSX ──
+  const sheetName = (S.activeSheet||'Gantt').substring(0,31);
+  try {
+    const wb = XLSXStyle.utils.book_new();
+    XLSXStyle.utils.book_append_sheet(wb, ws, sheetName);
+    XLSXStyle.writeFile(wb, `Succession_Gantt_${sheetName}.xlsx`);
+  } catch(e) {
+    // Fallback: plain xlsx without styles
+    const wb2 = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb2, ws, sheetName);
+    XLSX.writeFile(wb2, `Succession_Gantt_${sheetName}.xlsx`);
+  }
+  toast(`Gantt exported — ${rows.length} rows, ${yrFrom}–${yrTo}.`);
+}
+
+// ═══════════════════════════════════════════════
+// EXPORT POWERPOINT DASHBOARD
+// ═══════════════════════════════════════════════
+async function exportPPTX() {
+  toast('Building PowerPoint…');
+  const rows = filtered();
+  const sheetName = S.activeSheet || 'Unit';
+  const now = new Date();
+
+  // ── Colors ──────────────────────────────────────
+  const C = {
+    navy:    '08111f', navyMid: '0e1e35', navyCard: '112240',
+    scarlet: 'C8102E', scarletLt: 'E8294A',
+    gold:    'C9A84C', goldLt:   'E8C96A',
+    white:   'EEF2F7', muted:    '6B809A',
+    success: '27AE60', warning:  'E67E22', danger:  'E74C3C',
+    blue:    '2471A3', purple:   '7D3C98',
+  };
+
+  const pres = new PptxGenJS();
+  pres.layout = 'LAYOUT_WIDE'; // 13.3" × 7.5"
+  pres.title  = 'Succession Planning Dashboard';
+  pres.author = 'fl16stuff@gmail.com';
+
+  const W = 13.3, H = 7.5;
+
+  // ── Helper: dark slide background ──────────────
+  function darkBg(slide) {
+    slide.background = { color: C.navy };
+    // Top accent bar
+    slide.addShape(pres.shapes.RECTANGLE, { x:0, y:0, w:W, h:0.08, fill:{color:C.scarlet}, line:{color:C.scarlet} });
+  }
+
+  // ── Helper: section label ──────────────────────
+  function sectionLabel(slide, text, x, y, w) {
+    slide.addText(text.toUpperCase(), {
+      x, y, w, h:0.22, fontSize:8, bold:true, color:C.gold,
+      charSpacing:3, fontFace:'Calibri', valign:'middle', margin:0
+    });
+  }
+
+  // ── Helper: stat card ─────────────────────────
+  function statCard(slide, x, y, w, h, value, label, accentColor) {
+    slide.addShape(pres.shapes.RECTANGLE, { x, y, w, h, fill:{color:C.navyCard}, line:{color:'1E3A6A', pt:1} });
+    slide.addShape(pres.shapes.RECTANGLE, { x, y, w:0.06, h, fill:{color:accentColor}, line:{color:accentColor} });
+    slide.addText(String(value), { x:x+0.14, y:y+0.07, w:w-0.18, h:h*0.55, fontSize:30, bold:true, color:C.white, fontFace:'Calibri', valign:'middle', margin:0 });
+    slide.addText(label.toUpperCase(), { x:x+0.14, y:y+h*0.6, w:w-0.18, h:h*0.35, fontSize:8, color:C.muted, fontFace:'Calibri', charSpacing:1, valign:'top', margin:0 });
+  }
+
+  // ═══════════════════════════════════════════════
+  // SLIDE 1 — TITLE
+  // ═══════════════════════════════════════════════
+  const s1 = pres.addSlide();
+  s1.background = { color: C.navy };
+  s1.addShape(pres.shapes.RECTANGLE, { x:0, y:0, w:W, h:0.08, fill:{color:C.scarlet}, line:{color:C.scarlet} });
+  s1.addShape(pres.shapes.RECTANGLE, { x:0, y:H-0.08, w:W, h:0.08, fill:{color:C.scarlet}, line:{color:C.scarlet} });
+  // Big title
+  s1.addText('SUCCESSION PLANNING', { x:0.6, y:1.8, w:W-1.2, h:1.0, fontSize:52, bold:true, color:C.white, fontFace:'Calibri', charSpacing:8, align:'center', margin:0 });
+  s1.addText('DASHBOARD', { x:0.6, y:2.75, w:W-1.2, h:0.7, fontSize:36, bold:false, color:C.gold, fontFace:'Calibri', charSpacing:12, align:'center', margin:0 });
+  // Divider
+  s1.addShape(pres.shapes.RECTANGLE, { x:3.5, y:3.6, w:6.3, h:0.04, fill:{color:C.scarlet}, line:{color:C.scarlet} });
+  // Sub info
+  s1.addText(sheetName, { x:0.6, y:3.8, w:W-1.2, h:0.4, fontSize:16, color:C.muted, fontFace:'Calibri', align:'center', margin:0 });
+  s1.addText('As of ' + now.toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'}), { x:0.6, y:4.22, w:W-1.2, h:0.35, fontSize:13, color:C.muted, fontFace:'Calibri', align:'center', margin:0 });
+  s1.addText('fl16stuff@gmail.com', { x:0.6, y:6.8, w:W-1.2, h:0.3, fontSize:9, color:C.muted, fontFace:'Calibri', align:'center', charSpacing:4, margin:0 });
+
+  // ═══════════════════════════════════════════════
+  // SLIDE 2 — SUMMARY STATS
+  // ═══════════════════════════════════════════════
+  const s2 = pres.addSlide();
+  darkBg(s2);
+  s2.addText('SUCCESSION SUMMARY', { x:0.4, y:0.18, w:9, h:0.4, fontSize:20, bold:true, color:C.white, fontFace:'Calibri', charSpacing:4, margin:0 });
+  s2.addText(sheetName + '  ·  ' + now.toLocaleDateString('en-US',{month:'short',year:'numeric'}), { x:0.4, y:0.58, w:9, h:0.28, fontSize:10, color:C.muted, fontFace:'Calibri', margin:0 });
+
+  // Stat cards row
+  const total  = rows.length;
+  const gaps   = rows.filter(r=>rowStatus(r)==='gap').length;
+  const unf    = rows.filter(r=>rowStatus(r)==='unfilled').length;
+  const cov    = rows.filter(r=>rowStatus(r)==='covered').length;
+  const mis    = rows.filter(r=>mismatch(r)).length;
+  const grMis  = rows.filter(r=>gradeMismatch(r)).length;
+  const sumCy  = rows.filter(r=>atapCycle(r)==='Summer').length;
+  const winCy  = rows.filter(r=>atapCycle(r)==='Winter').length;
+
+  const cards = [
+    { v:total, l:'Total Positions', c:C.blue },
+    { v:cov,   l:'Covered',         c:C.success },
+    { v:gaps,  l:'Gapped',          c:C.scarlet },
+    { v:unf,   l:'Unfilled',        c:C.warning },
+    { v:mis,   l:'YMAV Mismatch',   c:C.scarletLt },
+    { v:grMis, l:'Grade/Rank Flag', c:C.warning },
+    { v:sumCy, l:'Summer Movers',   c:C.scarlet },
+    { v:winCy, l:'Winter Movers',   c:C.blue },
+  ];
+  const cw = (W - 0.8) / cards.length;
+  cards.forEach((c, i) => statCard(s2, 0.4 + i*cw, 1.0, cw-0.1, 1.3, c.v, c.l, c.c));
+
+  // Upcoming backfill table
+  const in12 = new Date(now); in12.setFullYear(in12.getFullYear()+1);
+  const upcoming = rows.filter(r=>{ const b=backfillDate(r); return b&&b>=now&&b<=in12; })
+    .sort((a,b)=>backfillDate(a)-backfillDate(b)).slice(0,8);
+
+  sectionLabel(s2, 'Backfill Requests Due Within 12 Months', 0.4, 2.45, 12);
+
+  if(upcoming.length) {
+    const tblData = [
+      [
+        {text:'Duty Title',    options:{bold:true, color:C.gold,  fill:{color:C.navyMid}, fontFace:'Calibri', fontSize:9}},
+        {text:'Grade',         options:{bold:true, color:C.gold,  fill:{color:C.navyMid}, fontFace:'Calibri', fontSize:9, align:'center'}},
+        {text:'Incumbent',     options:{bold:true, color:C.gold,  fill:{color:C.navyMid}, fontFace:'Calibri', fontSize:9}},
+        {text:'YMAV',          options:{bold:true, color:C.gold,  fill:{color:C.navyMid}, fontFace:'Calibri', fontSize:9, align:'center'}},
+        {text:'Request By',    options:{bold:true, color:C.gold,  fill:{color:C.navyMid}, fontFace:'Calibri', fontSize:9, align:'center'}},
+        {text:'ATAP',          options:{bold:true, color:C.gold,  fill:{color:C.navyMid}, fontFace:'Calibri', fontSize:9, align:'center'}},
+        {text:'Gap (mo)',      options:{bold:true, color:C.gold,  fill:{color:C.navyMid}, fontFace:'Calibri', fontSize:9, align:'center'}},
+        {text:'Status',        options:{bold:true, color:C.gold,  fill:{color:C.navyMid}, fontFace:'Calibri', fontSize:9, align:'center'}},
+      ],
+      ...upcoming.map((r,ri) => {
+        const bg = ri%2===0 ? C.navyCard : C.navyMid;
+        const st = rowStatus(r), at = atapCycle(r), gm = gapMonths(r);
+        const stColor = st==='gap'?C.scarletLt : st==='covered'?C.success : C.warning;
+        const cell = (t, opts={}) => ({ text:t||'—', options:{ color:C.white, fill:{color:bg}, fontFace:'Calibri', fontSize:9, ...opts }});
+        return [
+          cell(str(r.psntl),    {bold:true}),
+          cell(str(r.grade),    {color:C.goldLt, align:'center'}),
+          cell(str(r.incName)),
+          cell(str(r.ymav),     {align:'center'}),
+          cell(fmtDate(backfillDate(r)), {color:C.warning, align:'center'}),
+          cell(at||'—',         {align:'center', color:at==='Summer'?C.scarletLt:C.blue}),
+          cell(gm!=null?String(gm):'—', {align:'center', color:gm&&gm>0?C.scarletLt:C.success}),
+          cell(st,              {align:'center', color:stColor}),
+        ];
+      })
+    ];
+    s2.addTable(tblData, {
+      x:0.4, y:2.72, w:W-0.8,
+      colW:[3.0, 0.7, 2.2, 1.0, 1.3, 0.9, 0.9, 1.0],
+      border:{pt:1, color:'1E3A6A'},
+      rowH: 0.3,
+    });
+  } else {
+    s2.addText('No backfill requests due within the next 12 months.', { x:0.4, y:2.72, w:W-0.8, h:0.4, fontSize:11, color:C.muted, fontFace:'Calibri', italic:true, margin:0 });
+  }
+
+  // ═══════════════════════════════════════════════
+  // SLIDE 3 — FULL POSITION TABLE (up to 18 rows per slide)
+  // ═══════════════════════════════════════════════
+  const PAGE_SIZE = 16;
+  const pages = Math.ceil(rows.length / PAGE_SIZE);
+
+  for(let p=0; p<pages; p++) {
+    const chunk = rows.slice(p*PAGE_SIZE, (p+1)*PAGE_SIZE);
+    const sN = pres.addSlide();
+    darkBg(sN);
+    sN.addText('ALL POSITIONS — SUCCESSION STATUS', { x:0.4, y:0.18, w:10, h:0.4, fontSize:18, bold:true, color:C.white, fontFace:'Calibri', charSpacing:3, margin:0 });
+    sN.addText(`${sheetName}  ·  Page ${p+1} of ${pages}  ·  ${rows.length} total positions`, { x:0.4, y:0.58, w:10, h:0.25, fontSize:9, color:C.muted, fontFace:'Calibri', margin:0 });
+
+    const tblData = [
+      [
+        {text:'Duty Title',   options:{bold:true, color:C.gold, fill:{color:C.navyMid}, fontFace:'Calibri', fontSize:8}},
+        {text:'Gr',           options:{bold:true, color:C.gold, fill:{color:C.navyMid}, fontFace:'Calibri', fontSize:8, align:'center'}},
+        {text:'Incumbent',    options:{bold:true, color:C.gold, fill:{color:C.navyMid}, fontFace:'Calibri', fontSize:8}},
+        {text:'YMAV',         options:{bold:true, color:C.gold, fill:{color:C.navyMid}, fontFace:'Calibri', fontSize:8, align:'center'}},
+        {text:'Slated',       options:{bold:true, color:C.gold, fill:{color:C.navyMid}, fontFace:'Calibri', fontSize:8}},
+        {text:'Arrival',      options:{bold:true, color:C.gold, fill:{color:C.navyMid}, fontFace:'Calibri', fontSize:8, align:'center'}},
+        {text:'Gap',          options:{bold:true, color:C.gold, fill:{color:C.navyMid}, fontFace:'Calibri', fontSize:8, align:'center'}},
+        {text:'ATAP',         options:{bold:true, color:C.gold, fill:{color:C.navyMid}, fontFace:'Calibri', fontSize:8, align:'center'}},
+        {text:'Status',       options:{bold:true, color:C.gold, fill:{color:C.navyMid}, fontFace:'Calibri', fontSize:8, align:'center'}},
+        {text:'Flags',        options:{bold:true, color:C.gold, fill:{color:C.navyMid}, fontFace:'Calibri', fontSize:8, align:'center'}},
+      ],
+      ...chunk.map((r, ri) => {
+        const bg   = ri%2===0 ? C.navyCard : C.navyMid;
+        const st   = rowStatus(r), at = atapCycle(r), gm = gapMonths(r);
+        const mm2  = mismatch(r), gm2 = gradeMismatch(r);
+        const stColor = st==='gap'?C.scarletLt : st==='covered'?C.success : C.warning;
+        const flags = [mm2?'YMAV':'', gm2?'Gr/Rk':''].filter(Boolean).join(' ');
+        const cell = (t, opts={}) => ({ text:String(t||'—'), options:{ color:C.white, fill:{color:bg}, fontFace:'Calibri', fontSize:8, ...opts }});
+        return [
+          cell(str(r.psntl),  {bold:true}),
+          cell(str(r.grade),  {color:C.goldLt, align:'center'}),
+          cell(str(r.incName)),
+          cell(str(r.ymav),   {align:'center'}),
+          cell(str(r.slatName)),
+          cell(fmtDate(r.slatDate), {align:'center'}),
+          cell(gm!=null?gm+'mo':'—', {align:'center', color:gm&&gm>0?C.scarletLt:C.success}),
+          cell(at||'—',       {align:'center', color:at==='Summer'?C.scarletLt:C.blue}),
+          cell(st,            {align:'center', color:stColor}),
+          cell(flags,         {align:'center', color:flags?C.warning:C.muted}),
+        ];
+      })
+    ];
+    sN.addTable(tblData, {
+      x:0.4, y:0.9, w:W-0.8,
+      colW:[2.5, 0.5, 2.1, 0.85, 2.1, 1.0, 0.65, 0.75, 0.85, 0.7],
+      border:{pt:1, color:'1E3A6A'},
+      rowH:0.26,
+    });
+  }
+
+  // ═══════════════════════════════════════════════
+  // SLIDE 4 — ALERTS: GRADE/RANK & YMAV MISMATCHES
+  // ═══════════════════════════════════════════════
+  const flagRows = rows.filter(r => mismatch(r) || gradeMismatch(r));
+  if(flagRows.length) {
+    const sF = pres.addSlide();
+    darkBg(sF);
+    sF.addText('FLAGS & ALERTS', { x:0.4, y:0.18, w:9, h:0.4, fontSize:20, bold:true, color:C.white, fontFace:'Calibri', charSpacing:4, margin:0 });
+    sF.addText(`${flagRows.length} position(s) require attention`, { x:0.4, y:0.58, w:9, h:0.25, fontSize:10, color:C.muted, fontFace:'Calibri', margin:0 });
+
+    sectionLabel(sF, 'Grade / Rank Mismatches', 0.4, 0.92, 6);
+    sectionLabel(sF, 'YMAV Mismatches', 7.0, 0.92, 6);
+
+    const grRows  = rows.filter(r=>gradeMismatch(r));
+    const ymavRows= rows.filter(r=>mismatch(r));
+
+    // Grade/rank mismatch list
+    let gy = 1.18;
+    if(grRows.length===0) {
+      sF.addText('None', {x:0.4, y:gy, w:5.8, h:0.3, fontSize:10, color:C.success, fontFace:'Calibri', italic:true, margin:0});
+    }
+    grRows.slice(0,12).forEach(r => {
+      const exp = GRADE_RANK_MAP[str(r.grade).toUpperCase()];
+      sF.addShape(pres.shapes.RECTANGLE, { x:0.4, y:gy, w:5.8, h:0.38, fill:{color:C.navyCard}, line:{color:'1E3A6A',pt:1} });
+      sF.addShape(pres.shapes.RECTANGLE, { x:0.4, y:gy, w:0.05, h:0.38, fill:{color:C.warning}, line:{color:C.warning} });
+      sF.addText(str(r.psntl)||'—', {x:0.54, y:gy+0.02, w:3.5, h:0.18, fontSize:9, bold:true, color:C.white, fontFace:'Calibri', margin:0});
+      sF.addText(`Grade: ${str(r.grade)}  ·  Rank: ${str(r.incRank)}${exp?' (exp: '+exp.join('/')+')':''}`, {x:0.54, y:gy+0.19, w:5.2, h:0.15, fontSize:8, color:C.warning, fontFace:'Calibri', margin:0});
+      gy += 0.44;
+    });
+
+    // YMAV mismatch list
+    let yy = 1.18;
+    if(ymavRows.length===0) {
+      sF.addText('None', {x:7.0, y:yy, w:5.8, h:0.3, fontSize:10, color:C.success, fontFace:'Calibri', italic:true, margin:0});
+    }
+    ymavRows.slice(0,12).forEach(r => {
+      const dep = effDep(r);
+      sF.addShape(pres.shapes.RECTANGLE, { x:7.0, y:yy, w:5.9, h:0.38, fill:{color:C.navyCard}, line:{color:'1E3A6A',pt:1} });
+      sF.addShape(pres.shapes.RECTANGLE, { x:7.0, y:yy, w:0.05, h:0.38, fill:{color:C.scarletLt}, line:{color:C.scarletLt} });
+      sF.addText(str(r.psntl)||'—', {x:7.14, y:yy+0.02, w:5.5, h:0.18, fontSize:9, bold:true, color:C.white, fontFace:'Calibri', margin:0});
+      sF.addText(`YMAV: ${str(r.ymav)}  ·  Dep: ${fmtDate(dep)}`, {x:7.14, y:yy+0.19, w:5.5, h:0.15, fontSize:8, color:C.scarletLt, fontFace:'Calibri', margin:0});
+      yy += 0.44;
+    });
+  }
+
+  // ── Write file ──────────────────────────────────
+  await pres.writeFile({ fileName: `Succession_Dashboard_${sheetName.replace(/\s+/g,'_')}.pptx` });
+  toast(`PowerPoint exported — ${rows.length} positions, ${pres.slides.length} slides.`);
+}
+
+// ═══════════════════════════════════════════════
+// TEMPLATE
+// ═══════════════════════════════════════════════
+function showTplModal() {
+  document.getElementById('tplBody').innerHTML=COLS.map(c=>
+    `<tr><td>${c.hdr}</td><td>${c.full}</td><td>${c.ex}</td><td>${c.note}</td></tr>`).join('');
+  document.getElementById('tplModal').classList.add('open');
+}
+function downloadTemplate() {
+  const headers=COLS.map(c=>c.hdr);
+  const example=COLS.map(c=>c.ex);
+  const wb=XLSX.utils.book_new();
+  const ws=XLSX.utils.aoa_to_sheet([headers,example]);
+  ws['!cols']=headers.map(h=>({wch:Math.max(h.length+2,16)}));
+  XLSX.utils.book_append_sheet(wb,ws,'Template');
+  XLSX.writeFile(wb,'Succession_Plan_Template.xlsx');
+  document.getElementById('tplModal').classList.remove('open');
+  toast('Template downloaded.');
+}
+
+// ═══════════════════════════════════════════════
+// DRAG & DROP
+// ═══════════════════════════════════════════════
+const dz=document.getElementById('dropZone');
+dz.addEventListener('dragover',e=>{e.preventDefault();dz.classList.add('over')});
+dz.addEventListener('dragleave',()=>dz.classList.remove('over'));
+dz.addEventListener('drop',e=>{e.preventDefault();dz.classList.remove('over');const f=e.dataTransfer.files[0];if(f)loadFile({target:{files:[f],value:''}});});
+
+// Import modal drop zone — wired up after DOM ready
+function wireImpDrop() {
+  const idz=document.getElementById('impDropZone');
+  if(!idz) return;
+  idz.addEventListener('dragover',e=>{e.preventDefault();idz.classList.add('over');});
+  idz.addEventListener('dragleave',()=>idz.classList.remove('over'));
+  idz.addEventListener('drop',e=>{
+    e.preventDefault();idz.classList.remove('over');
+    const f=e.dataTransfer.files[0];
+    if(f) loadImportFile({target:{files:[f],value:''}});
+  });
+}
+// Wire on modal open
+const _origOpenImport = openImportModal;
+openImportModal = function() {
+  _origOpenImport();
+  setTimeout(wireImpDrop, 50);
+};
+
+document.querySelectorAll('.modal-overlay').forEach(o=>o.addEventListener('click',e=>{if(e.target===o)o.classList.remove('open')}));
+document.addEventListener('keydown',e=>{ if(e.key==='Escape'){ document.querySelectorAll('.modal-overlay.open').forEach(o=>o.classList.remove('open')); closeDetail(); document.getElementById('colPanel').classList.remove('open'); }});
+
+// ═══════════════════════════════════════════════
+// TOAST
+// ═══════════════════════════════════════════════
+function toast(msg,type=''){
+  const t=document.createElement('div');
+  t.className='toast'+(type?' '+type:'');t.textContent=msg;
+  document.getElementById('toasts').appendChild(t);
+  setTimeout(()=>t.remove(),4000);
+}
+</script>
+</body>
+</html>
